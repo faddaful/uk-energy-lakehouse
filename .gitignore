@@ -216,3 +216,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+.env
+*.duckdb
+data/
+__pycache__/
+.venv/
+data/
+docs(dont't commit)/
+docs(don't commit)/

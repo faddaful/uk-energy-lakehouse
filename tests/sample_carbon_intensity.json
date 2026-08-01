@@ -1,0 +1,47 @@
+{
+  "data": {
+    "regionid": 13,
+    "dnoregion": "WPD West Midlands",
+    "shortname": "West Midlands",
+    "data": [
+      {
+        "from": "2026-06-24T00:00Z",
+        "to": "2026-06-24T00:30Z",
+        "intensity": {
+          "forecast": 145,
+          "index": "moderate"
+        },
+        "generationmix": [
+          {"fuel": "gas", "perc": 40.1},
+          {"fuel": "coal", "perc": 0.0},
+          {"fuel": "biomass", "perc": 5.3},
+          {"fuel": "nuclear", "perc": 15.2},
+          {"fuel": "hydro", "perc": 1.1},
+          {"fuel": "imports", "perc": 8.4},
+          {"fuel": "other", "perc": 0.2},
+          {"fuel": "wind", "perc": 20.5},
+          {"fuel": "solar", "perc": 9.2}
+        ]
+      },
+      {
+        "from": "2026-06-24T00:30Z",
+        "to": "2026-06-24T01:00Z",
+        "intensity": {
+          "forecast": 138,
+          "index": "low"
+        },
+        "generationmix": [
+          {"fuel": "gas", "perc": 37.6},
+          {"fuel": "coal", "perc": 0.0},
+          {"fuel": "biomass", "perc": 5.1},
+          {"fuel": "nuclear", "perc": 15.0},
+          {"fuel": "hydro", "perc": 1.0},
+          {"fuel": "imports", "perc": 8.9},
+          {"fuel": "other", "perc": 0.2},
+          {"fuel": "wind", "perc": 23.1},
+          {"fuel": "solar", "perc": 9.1}
+        ]
+      }
+    ]
+  }
+}
