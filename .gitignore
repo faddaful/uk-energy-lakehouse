@@ -226,3 +226,4 @@ docs(dont't commit)/
 docs(don't commit)/
 .tmp_dagster_home_*/
 journal.md
+.dagster_home

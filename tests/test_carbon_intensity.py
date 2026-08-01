@@ -2,7 +2,6 @@
 """
 This test feeds a saved sample JSON into your validate function and checks it accepts good data and rejects an empty payload. 
 
-I will run this with uv run pytest.
 """
 
 import os
