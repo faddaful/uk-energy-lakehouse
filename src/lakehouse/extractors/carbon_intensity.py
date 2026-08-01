@@ -101,7 +101,7 @@ def main() -> None:
     parser.add_argument("--start-date", help="Start of a date range, in YYYY-MM-DD format.")
     parser.add_argument("--end-date", help="End of a date range, in YYYY-MM-DD format.")
     parser.add_argument(
-        "--region", default="13", help="Region id to fetch data for (default: 13, West Midlands)."
+        "--region", default="8", help="Region id to fetch data for (default: 8, West Midlands)."
     )
     args = parser.parse_args()
 

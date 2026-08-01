@@ -1,12 +1,12 @@
 [project]
 name = "lakehouse"
 version = "0.1.0"
-description = "Add your description here"
+description = "UK Energy Market Lakehouse"
 readme = "README.md"
 authors = [
     { name = "Ibraheem Olayanju", email = "olayanjuibraheem1@gmail.com" }
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
     "dagster>=1.13.16",
     "dagster-webserver>=1.13.16",
@@ -17,9 +17,6 @@ dependencies = [
     "pyarrow>=25.0.0",
     "requests>=2.34.2",
 ]
-
-[project.scripts]
-lakehouse = "lakehouse:main"
 
 [build-system]
 requires = ["uv_build>=0.12.1,<0.13.0"]
@@ -33,3 +30,6 @@ dev = [
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+
+[tool.dagster]
+module_name = "lakehouse.dagster_defs.definitions"
