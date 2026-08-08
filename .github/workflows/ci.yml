@@ -44,6 +44,7 @@ jobs:
         working-directory: dbt
         run: uv run dbt deps
 
-      - name: dbt build (against sample fixtures)
+      - name: dbt build (against fixtures)
         working-directory: dbt
-        run: uv run dbt build --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity/*.parquet}'
+        run: |
+          uv run dbt build --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity/*.parquet}'
