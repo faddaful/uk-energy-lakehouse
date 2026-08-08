@@ -1,0 +1,53 @@
+# Runs on every push and pull request. GitHub gives us a fresh Ubuntu machine;
+# whatever passes here passes from a clean checkout.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Get the code onto the fresh machine.
+      - uses: actions/checkout@v4
+
+      # 2. Install uv (the official action handles caching too).
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          # Pin the Python your project targets. If you pinned 3.12 locally,
+          # match it here. Using 3.12 in CI is safe even if you run 3.14
+          # locally, but keep them the same to avoid surprises.
+          python-version: "3.12"
+
+      # 3. Install the project and dev dependencies into a clean venv.
+      - name: Install dependencies
+        run: uv sync --dev
+
+      # 4. Lint. Fails the build on style/error violations.
+      - name: Ruff
+        run: uv run ruff check .
+
+      # 5. Unit tests for the extractors.
+      - name: Pytest
+        run: uv run pytest
+
+      # 6. dbt: download packages, then build against the sample fixture data
+      #    sample instead of real data (which is not in Git). The --vars flag
+      #    overrides the source path; see the staging model change.
+      - name: dbt deps
+        working-directory: dbt
+        run: uv run dbt deps
+
+      - name: Create data directory for DuckDB
+        run: mkdir -p data
+
+      - name: dbt build (against fixtures)
+        working-directory: dbt
+        run: |
+          uv run dbt build --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity/*.parquet}'

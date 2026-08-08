@@ -10,14 +10,17 @@ Backfill-capable: the function takes a date range argument, so I can load histor
 Keep the raw shape: bronze stores what the API sent, plus columns for loaded_at and source. No cleaning is done here. Cleaning happens in silver, where it is visible and testable.
 
 """
-
 import argparse
 import datetime
-import json
 import logging
 import os
-import requests
+
 import pandas as pd
+import requests
+
+# Use own logger to identify logging messages by module name.
+logger = logging.getLogger(__name__)
+
 
 def fetch_carbon_intensity_data(start_date: str, end_date: str, region: str) -> pd.DataFrame:
     """
@@ -32,12 +35,12 @@ def fetch_carbon_intensity_data(start_date: str, end_date: str, region: str) -> 
     response = requests.get(url)
     
     if response.status_code != 200:
-        logging.error(f"Failed to fetch data: {response.status_code} - {response.text}")
+        logger.error(f"Failed to fetch data: {response.status_code} - {response.text}")
         return pd.DataFrame()  # Return an empty DataFrame on failure
 
     data = response.json()
     if 'data' not in data or 'data' not in data['data']:
-        logging.error("Unexpected response structure")
+        logger.error("Unexpected response structure")
         return pd.DataFrame()  # Return an empty DataFrame on unexpected structure
 
     records = []
@@ -48,7 +51,7 @@ def fetch_carbon_intensity_data(start_date: str, end_date: str, region: str) -> 
             'intensity_actual': entry['intensity'].get('actual'),
             'intensity_forecast': entry['intensity']['forecast'],
             'region_id': region,
-            'loaded_at': datetime.datetime.now().isoformat(),
+            'loaded_at': datetime.datetime.now(tz=datetime.UTC).isoformat(),
             'source': 'carbon_intensity_api'
         }
         records.append(record)
@@ -66,13 +69,13 @@ def validate_carbon_intensity_data(df: pd.DataFrame) -> bool:
         bool: True if the data is valid, False otherwise.
     """
     if df.empty:
-        logging.warning("DataFrame is empty")
+        logger.warning("DataFrame is empty")
         return False
 
     required_columns = ['from', 'to', 'intensity_actual', 'intensity_forecast', 'region_id', 'loaded_at', 'source']
     for col in required_columns:
         if col not in df.columns:
-            logging.error(f"Missing required column: {col}")
+            logger.error(f"Missing required column: {col}")
             return False
 
     return True
@@ -91,7 +94,8 @@ def save_carbon_intensity_data(df: pd.DataFrame, date: str, base_dir: str = "dat
     output_file = os.path.join(output_dir, f"carbon_intensity_{date}.parquet")
     
     df.to_parquet(output_file, index=False)
-    logging.info(f"Data saved to {output_file}")
+    # Use own logger
+    logger.info(f"Saved {len(df)} rows to {output_file}")
 
 def main() -> None:
     parser = argparse.ArgumentParser(

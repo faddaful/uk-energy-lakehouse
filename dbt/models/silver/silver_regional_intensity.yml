@@ -9,12 +9,11 @@ models:
       One row per half hour per region, deduplicated to the latest
       loaded_at. The trustworthy layer downstream models build on.
     tests:
-      # Uniqueness of a COMBINATION of columns needs dbt_utils; the plain
-      # `unique` test only works on a single column.
       - dbt_utils.unique_combination_of_columns:
-          combination_of_columns:
-            - valid_from
-            - region_id
+          arguments:
+            combination_of_columns:
+              - valid_from
+              - region_id
     columns:
       - name: valid_from
         tests:

@@ -4,11 +4,16 @@ This test feeds a saved sample JSON into your validate function and checks it ac
 
 """
 
-import os
 import json
+import os
+
 import pandas as pd
-import pytest
-from lakehouse.extractors.carbon_intensity import validate_carbon_intensity_data, save_carbon_intensity_data 
+
+from lakehouse.extractors.carbon_intensity import (
+    save_carbon_intensity_data,
+    validate_carbon_intensity_data,
+)
+
 
 def load_sample_data(file_path: str) -> pd.DataFrame:
     """

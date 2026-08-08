@@ -18,7 +18,7 @@ REGION_NAME = "West Midlands"
 
 def today() -> str:
     """Today's date as YYYY-MM-DD."""
-    return datetime.date.today().isoformat()
+    return datetime.datetime.now(tz=datetime.UTC).date().isoformat()
 
 
 @asset(
