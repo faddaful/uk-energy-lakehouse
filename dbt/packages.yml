@@ -1,0 +1,8 @@
+# Test and helper libraries. Downloaded into dbt_packages/ by: uv run dbt deps
+# (add dbt_packages/ to .gitignore; it is downloaded code, not yours)
+
+packages:
+  - package: dbt-labs/dbt_utils
+    version: [">=1.1.0", "<2.0.0"]
+  - package: metaplane/dbt_expectations
+    version: [">=0.10.0", "<0.11.0"]

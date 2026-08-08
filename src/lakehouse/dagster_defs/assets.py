@@ -12,7 +12,7 @@ from lakehouse.extractors.carbon_intensity import (
 
 # Verify this ID in your browser first:
 # https://api.carbonintensity.org.uk/regional/regionid/8 -> check the "shortname"
-REGION_ID = 8
+REGION_ID = "8"
 REGION_NAME = "West Midlands"
 
 
@@ -30,8 +30,9 @@ def bronze_carbon_intensity() -> MaterializeResult:
     """No ins/out declared: this asset has no upstream dependencies and
     Dagster infers the output automatically."""
     run_date = today()
+    next_date = (datetime.date.fromisoformat(run_date) + datetime.timedelta(days=1)).isoformat()
 
-    df = fetch_carbon_intensity_data(region=REGION_ID)
+    df = fetch_carbon_intensity_data(start_date=run_date, end_date=next_date, region=REGION_ID)
 
     if not validate_carbon_intensity_data(df):
         raise ValueError(f"Invalid carbon intensity data for {run_date}")

@@ -1,0 +1,16 @@
+# How dbt connects to the database. For DuckDB, the "database" is just a file.
+# The path is relative to where you run dbt (the dbt/ folder), so ../data/
+# climbs back up to the repo root.
+#
+# dbt normally looks for this file in ~/.dbt/, but also finds it in the
+# current directory. Keeping it in the repo is fine here because it contains
+# no secrets, only a local file path. If dbt ever complains it cannot find
+# a profile, run with: uv run dbt build --profiles-dir .
+
+lakehouse:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ../data/lakehouse.duckdb
+      threads: 4
