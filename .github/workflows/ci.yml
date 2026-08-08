@@ -44,6 +44,9 @@ jobs:
         working-directory: dbt
         run: uv run dbt deps
 
+      - name: Create data directory for DuckDB
+        run: mkdir -p data
+
       - name: dbt build (against fixtures)
         working-directory: dbt
         run: |
