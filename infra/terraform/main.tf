@@ -119,11 +119,47 @@ resource "azurerm_role_assignment" "github_actions_blob_contributor" {
 
 # Reader, not Contributor: terraform plan only needs to read the current
 # state of what's already there to compute a diff, it does not create or
-# change anything. If a real CI run of `terraform plan` ever fails on
-# permissions with this in place, that is the signal to revisit this
-# choice, not a reason to default to Contributor pre-emptively.
+# change anything. This held up under a real CI run, mostly: Reader alone
+# was enough for every resource except the two grants immediately below,
+# both surfaced by an actual `terraform plan` failure in CI, not
+# anticipated in advance.
 resource "azurerm_role_assignment" "github_actions_reader" {
   scope                = azurerm_resource_group.this.id
   role_definition_name = "Reader"
+  principal_id         = azuread_service_principal.github_actions.object_id
+}
+
+# azurerm_storage_account has computed attributes (primary_access_key,
+# primary_connection_string, etc.) that only exist by calling listKeys,
+# and the provider populates them on every refresh regardless of whether
+# this config ever reads them. Reader deliberately excludes
+# Microsoft.Storage/storageAccounts/listKeys/action -- keys are full
+# credential material, a read-only role should not be able to mint them
+# -- so plain `terraform plan` 403'd on this in CI. storage_use_azuread
+# on the provider (versions.tf) was tried first, on the theory that it
+# would make the provider use Azure AD instead of ever calling listKeys;
+# confirmed with TF_LOG=DEBUG that it does not eliminate this specific
+# call for azurerm_storage_account's own attribute refresh, only for
+# separate data-plane resources. Storage Account Contributor is the
+# narrowest built-in role that includes listKeys -- it is a
+# Microsoft.Storage/storageAccounts/* wildcard, broader than ideal, but
+# scoped to this one storage account, not the resource group, and CI
+# already fully manages this exact resource via Terraform regardless.
+resource "azurerm_role_assignment" "github_actions_storage_account_contributor" {
+  scope                = azurerm_storage_account.this.id
+  role_definition_name = "Storage Account Contributor"
+  principal_id         = azuread_service_principal.github_actions.object_id
+}
+
+# The consumption budget lives at subscription scope, outside
+# azurerm_resource_group.this entirely -- Reader on the resource group
+# was never going to cover a resource that isn't in it, no matter how
+# broad. Cost Management Reader is the built-in role scoped to exactly
+# this: reading cost and budget data, nothing else, at subscription
+# scope. Also surfaced by a real CI plan failure (401 on the budget
+# resource), not anticipated.
+resource "azurerm_role_assignment" "github_actions_cost_management_reader" {
+  scope                = "/subscriptions/${data.azurerm_client_config.current.subscription_id}"
+  role_definition_name = "Cost Management Reader"
   principal_id         = azuread_service_principal.github_actions.object_id
 }

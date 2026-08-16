@@ -19,9 +19,9 @@ terraform {
   backend "azurerm" {
     resource_group_name  = "rg-energylake"
     storage_account_name = "stenergylakeka1xq2"
-    container_name        = "tfstate"
-    key                    = "lakehouse.tfstate"
-    use_azuread_auth      = true
+    container_name       = "tfstate"
+    key                  = "lakehouse.tfstate"
+    use_azuread_auth     = true
   }
 
   required_providers {
@@ -62,4 +62,20 @@ provider "azurerm" {
   # nothing for this reconciliation to do here. Skipping it removes the
   # stall entirely.
   resource_provider_registrations = "none"
+
+  # Without this, the provider fetches the storage account's access keys
+  # on every refresh of azurerm_storage_account.this -- to build an
+  # internal Queues client, not because anything in this config asked
+  # for a key -- which needs Microsoft.Storage/storageAccounts/listKeys,
+  # an action deliberately excluded from Reader and from
+  # Storage Blob Data Contributor (both identities' roles here) since
+  # keys are full-account credential material, not something a read-only
+  # or data-plane-only role should be able to mint. CI's terraform plan
+  # failed on exactly this: 403 on listKeys, an identity that can read
+  # blobs but was never meant to be able to pull a master key. This
+  # makes the provider use Azure AD auth for its own storage operations
+  # instead of ever fetching a key, so the permission it was missing
+  # stops being one it needs. Confirmed with TF_LOG=DEBUG: the listKeys
+  # call is gone from the request log with this set, present without it.
+  storage_use_azuread = true
 }
