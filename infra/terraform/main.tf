@@ -73,11 +73,14 @@ resource "azurerm_consumption_budget_subscription" "this" {
 }
 
 # Lets your own signed-in identity read and write data with Azure AD,
-# so no account keys are needed in your application code.
+# so no account keys are needed in your application code. principal_id is
+# the pinned var.my_object_id, not data.azurerm_client_config.current --
+# see the variable's own comment for why that distinction is load-bearing
+# here, not stylistic.
 resource "azurerm_role_assignment" "me_blob_contributor" {
   scope                = azurerm_storage_account.this.id
   role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = data.azurerm_client_config.current.object_id
+  principal_id         = var.my_object_id
 }
 
 # CI's own identity. Same "no secrets" principle as the role assignment
@@ -119,12 +122,19 @@ resource "azurerm_role_assignment" "github_actions_blob_contributor" {
 
 # Reader, not Contributor: terraform plan only needs to read the current
 # state of what's already there to compute a diff, it does not create or
-# change anything. This held up under a real CI run, mostly: Reader alone
-# was enough for every resource except the two grants immediately below,
-# both surfaced by an actual `terraform plan` failure in CI, not
-# anticipated in advance.
+# change anything. Scoped to the subscription, not the resource group --
+# started narrower and had to widen after two separate real CI failures
+# (401 on the budget, then 403 reading a role assignment) both turned out
+# to be the same root cause: RBAC scope only flows downward, a resource-
+# group-scoped grant can never see a subscription-scoped resource no
+# matter how much read access it carries. Reader's own permission list is
+# just "*/read" (checked directly: `az role definition list --name
+# Reader`), so this was never about needing more access, only a wider
+# scope for the same access. Subscription-scoped Reader now also covers
+# what the separate Cost Management Reader grant below used to cover, so
+# that one was removed rather than kept redundant.
 resource "azurerm_role_assignment" "github_actions_reader" {
-  scope                = azurerm_resource_group.this.id
+  scope                = "/subscriptions/${data.azurerm_client_config.current.subscription_id}"
   role_definition_name = "Reader"
   principal_id         = azuread_service_principal.github_actions.object_id
 }
@@ -148,18 +158,5 @@ resource "azurerm_role_assignment" "github_actions_reader" {
 resource "azurerm_role_assignment" "github_actions_storage_account_contributor" {
   scope                = azurerm_storage_account.this.id
   role_definition_name = "Storage Account Contributor"
-  principal_id         = azuread_service_principal.github_actions.object_id
-}
-
-# The consumption budget lives at subscription scope, outside
-# azurerm_resource_group.this entirely -- Reader on the resource group
-# was never going to cover a resource that isn't in it, no matter how
-# broad. Cost Management Reader is the built-in role scoped to exactly
-# this: reading cost and budget data, nothing else, at subscription
-# scope. Also surfaced by a real CI plan failure (401 on the budget
-# resource), not anticipated.
-resource "azurerm_role_assignment" "github_actions_cost_management_reader" {
-  scope                = "/subscriptions/${data.azurerm_client_config.current.subscription_id}"
-  role_definition_name = "Cost Management Reader"
   principal_id         = azuread_service_principal.github_actions.object_id
 }

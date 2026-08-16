@@ -35,3 +35,25 @@ variable "github_repo" {
   type        = string
   default     = "faddaful@25750119/uk-energy-lakehouse@1318837658"
 }
+
+variable "my_object_id" {
+  # Pinned, not read from data.azurerm_client_config.current.object_id --
+  # that data source resolves to whoever is CURRENTLY authenticated when
+  # terraform runs, not a fixed reference to "me". Using it here meant
+  # every CI run (authenticated as the GitHub Actions service principal,
+  # not me) saw this role assignment's principal_id as needing to change
+  # to CI's object id, and planned to destroy-and-replace it: not a
+  # no-op, an actual plan to strip my own blob access and redundantly
+  # grant CI's identity a role it already separately has. Never actually
+  # applied -- caught in a `terraform plan` in CI before any apply ran --
+  # but it would have flip-flopped destructively forever, alternating
+  # between "belongs to me" and "belongs to CI" depending on who ran
+  # terraform last. data.azurerm_client_config.current is still the right
+  # tool for things that should genuinely track the caller (the provider's
+  # own subscription_id, for instance); it was never the right tool for a
+  # role assignment meant to stay pointed at one specific fixed identity
+  # regardless of who is running Terraform at the time.
+  description = "Your own Azure AD object id (az ad signed-in-user show --query id -o tsv), pinned so this doesn't silently repoint to whoever is running terraform"
+  type        = string
+  default     = "4409573e-839d-4003-98e2-b9ee88eabd0c"
+}
