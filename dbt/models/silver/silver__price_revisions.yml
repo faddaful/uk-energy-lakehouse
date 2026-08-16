@@ -1,0 +1,29 @@
+# Tests for the silver model. Filename: silver__price_revisions.yml, sits
+# next to the .sql file in models/silver/.
+
+version: 2
+
+models:
+  - name: silver__price_revisions
+    description: >
+      Audit log of every price change observed in bronze for a
+      settlement_date + settlement_period: one row per change, with the
+      old value, the new value, and when the new value was first seen.
+      The source for the revision observatory (published later).
+    columns:
+      - name: settlement_date
+        tests:
+          - not_null
+      - name: settlement_period
+        tests:
+          - not_null
+      - name: old_system_sell_price
+        tests:
+          - not_null
+      - name: new_system_sell_price
+        tests:
+          - not_null
+      - name: revised_at
+        description: loaded_at of the landing that introduced the new value.
+        tests:
+          - not_null

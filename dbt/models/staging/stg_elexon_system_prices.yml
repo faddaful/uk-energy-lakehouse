@@ -1,0 +1,30 @@
+# Tests for the staging model. Filename: stg_elexon_system_prices.yml,
+# sits next to the .sql file in models/staging/.
+
+version: 2
+
+models:
+  - name: stg_elexon_system_prices
+    description: >
+      Bronze Elexon system prices parquet, typed and renamed. Contains
+      every past landing for a settlement_date + settlement_period, not
+      just the latest: bronze is append-only for Elexon. Resolution to one
+      row happens in silver.
+    columns:
+      - name: settlement_date
+        description: The settlement date this price applies to.
+        tests:
+          - not_null
+      - name: settlement_period
+        description: 1-48 on most days, 46 or 50 on clock-change days.
+        tests:
+          - not_null
+      - name: system_sell_price
+        description: System sell price (GBP/MWh) for this settlement period.
+        tests:
+          - not_null
+      - name: loaded_at
+        description: When this particular landing was fetched. Not unique
+          per settlement_date + settlement_period, by design.
+        tests:
+          - not_null
