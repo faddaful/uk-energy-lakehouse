@@ -1,4 +1,4 @@
-"""Schedules: bronze carbon intensity every 30 minutes, Elexon system prices weekly."""
+"""Schedules: bronze carbon intensity every 30 minutes, Elexon revision sweeps weekly."""
 
 from dagster import AssetSelection, ScheduleDefinition, define_asset_job
 
@@ -27,5 +27,19 @@ bronze_elexon_system_prices_job = define_asset_job(
 bronze_elexon_system_prices_schedule = ScheduleDefinition(
     job=bronze_elexon_system_prices_job,
     cron_schedule="0 3 * * 0",
+    execution_timezone="UTC",
+)
+
+bronze_elexon_generation_by_fuel_job = define_asset_job(
+    name="bronze_elexon_generation_by_fuel_job",
+    selection=AssetSelection.assets("bronze_elexon_generation_by_fuel"),
+    description="Re-download the trailing 28 days of Elexon generation by fuel to catch revisions.",
+)
+
+# Offset 30 minutes from the system prices sweep so the two weekly jobs
+# don't compete for the same run slot / API rate-limit window.
+bronze_elexon_generation_by_fuel_schedule = ScheduleDefinition(
+    job=bronze_elexon_generation_by_fuel_job,
+    cron_schedule="30 3 * * 0",
     execution_timezone="UTC",
 )

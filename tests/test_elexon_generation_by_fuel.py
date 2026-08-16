@@ -98,9 +98,33 @@ def test_save_generation_by_fuel_data(tmp_path):
     save_generation_by_fuel_data(df, date_str, base_dir=str(tmp_path / "data"))
 
     output_dir = tmp_path / f"data/bronze/elexon_generation_by_fuel/date={date_str}"
-    output_file = output_dir / f"elexon_generation_by_fuel_{date_str}.parquet"
+    files = sorted(output_dir.glob("*.parquet"))
 
-    assert output_file.exists()
+    assert len(files) == 1
 
-    saved_df = pd.read_parquet(output_file)
+    saved_df = pd.read_parquet(files[0])
     assert not saved_df.empty
+
+
+def test_save_generation_by_fuel_data_does_not_overwrite_previous_landing(tmp_path):
+    # Bronze is append-only for Elexon: landing the same settlement date
+    # twice (as the weekly revision re-download will) must produce two
+    # files, not one file overwritten in place. Same behaviour as system
+    # prices, for the same reason.
+    sample_data_path = os.path.join(
+        os.path.dirname(__file__), 'sample_elexon_generation_by_fuel.json'
+    )
+    date_str = '2026-08-08'
+    base_dir = str(tmp_path / "data")
+
+    df_first = load_sample_data(sample_data_path)
+    save_generation_by_fuel_data(df_first, date_str, base_dir=base_dir)
+
+    df_second = load_sample_data(sample_data_path)
+    df_second['loaded_at'] = df_second['loaded_at'] + pd.Timedelta(seconds=1)
+    save_generation_by_fuel_data(df_second, date_str, base_dir=base_dir)
+
+    output_dir = tmp_path / f"data/bronze/elexon_generation_by_fuel/date={date_str}"
+    files = sorted(output_dir.glob("*.parquet"))
+
+    assert len(files) == 2

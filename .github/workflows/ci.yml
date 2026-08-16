@@ -50,4 +50,4 @@ jobs:
       - name: dbt build (against fixtures)
         working-directory: dbt
         run: |
-          uv run dbt build --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity/*.parquet, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices/*.parquet}'
+          uv run dbt build --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity/*.parquet, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices/*.parquet, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel/*.parquet}'
