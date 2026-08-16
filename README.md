@@ -96,6 +96,12 @@ Authentication is OIDC via `azure/login`, backed by an `azuread_application_fede
 
 CI's identity gets the same `Storage Blob Data Contributor` scope as the human identity above (data-plane only, on the storage account), plus `Reader` on the resource group for `terraform plan` — deliberately not `Contributor`: plan only needs to read current state to compute a diff, it never creates or changes anything.
 
+## Terraform state
+
+Remote, in a `tfstate` container in the same storage account this project provisions (kept separate from the `lakehouse` container bronze data lives in) — not the Terraform default of a local file. This isn't a style preference: with local state, CI's fresh checkout has no state at all, so every `terraform output` and `terraform plan` there would see "nothing exists yet" regardless of what is actually deployed. That surfaced as empty-string `abfss://` URLs in dbt's `bronze()` macro, not as an obviously state-related error, before the backend existed. A human and CI running Terraform against the same infrastructure need to be looking at the same state, or neither one's view of it can be trusted.
+
+Authenticated with `use_azuread_auth = true`, not a storage account key: the backend uses whatever Azure identity is already active (the Azure CLI session locally, `azure/login`'s OIDC-derived session in CI), the same "no stored secrets" choice as everything else here. No new RBAC grant was needed for this — the `Storage Blob Data Contributor` role both identities already have is scoped to the whole storage account, not just the `lakehouse` container, so it already covers `tfstate` too.
+
 ## Budget alert
 
 `infra/terraform/main.tf` provisions an `azurerm_consumption_budget_subscription` at £1.50/month with two notifications, at 80% and 100% of actual spend, both emailing the account owner. This is the actual cost tripwire for the whole project, not a manual step to remember: it's created and destroyed along with everything else by `terraform apply` / `make teardown`.

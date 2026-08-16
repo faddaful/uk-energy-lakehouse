@@ -1,6 +1,29 @@
 terraform {
   required_version = ">= 1.9.0"
 
+  # State was local-only until this line (infra/terraform/terraform.tfstate,
+  # gitignored) -- meaning only this machine ever knew what had actually
+  # been deployed. CI does a fresh checkout with no state at all, so every
+  # `terraform output` there returned empty strings, not an error: from
+  # CI's point of view nothing had ever been created. That surfaced as
+  # empty-string abfss:// URLs in dbt's bronze() macro, not as an obviously
+  # state-related failure.
+  #
+  # Backend is the same storage account this project already provisions
+  # (a separate "tfstate" container from "lakehouse", so state and bronze
+  # data never share a container), authenticated with use_azuread_auth
+  # rather than a storage account key -- the same "no stored secrets"
+  # choice as everywhere else in this project. Both the human identity and
+  # CI's identity already have Storage Blob Data Contributor on this
+  # account (see main.tf), which is all this needs; no new RBAC grant.
+  backend "azurerm" {
+    resource_group_name  = "rg-energylake"
+    storage_account_name = "stenergylakeka1xq2"
+    container_name        = "tfstate"
+    key                    = "lakehouse.tfstate"
+    use_azuread_auth      = true
+  }
+
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
