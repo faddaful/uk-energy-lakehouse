@@ -29,16 +29,30 @@ models:
           - not_null
       - name: generation_mw
         description: >
-          Generation cannot be negative for this dataset (it is output by
-          fuel type, not a net/interconnector flow that could be), so the
-          lower bound is a real constraint, not just a sanity margin. The
-          upper bound is a loose sanity check against a unit error.
+          FUELHH's fuel_type values are not all "a generator producing
+          power": INT* is interconnector flow (negative means GB is
+          exporting, not importing) and PS is pumped storage (negative
+          means it is pumping/charging, not generating). Both are real,
+          expected values, confirmed against 90 days of real backfilled
+          data, not assumed. Everything else is a true generator and
+          cannot legitimately be negative. Checked as two separately
+          scoped range tests below rather than one loose bound, so a
+          genuine generator going negative (a real bug) still fails
+          loudly instead of being masked by the interconnector/PS margin.
         tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
+              config:
+                where: "fuel_type not like 'INT%' and fuel_type != 'PS'"
               arguments:
                 min_value: 0
                 max_value: 50000
+          - dbt_expectations.expect_column_values_to_be_between:
+              config:
+                where: "fuel_type like 'INT%' or fuel_type = 'PS'"
+              arguments:
+                min_value: -3000
+                max_value: 3000
       - name: loaded_at
         tests:
           - not_null
