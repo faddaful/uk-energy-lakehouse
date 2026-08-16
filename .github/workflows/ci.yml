@@ -134,6 +134,14 @@ jobs:
         working-directory: dbt
         run: uv run dbt deps
 
+      # DuckDB doesn't create the parent directory for its database file,
+      # only the file itself -- a fresh checkout has no data/ at all, so
+      # opening lakehouse_azure.duckdb fails outright without this. The
+      # build job needs the equivalent step for the same reason; this job
+      # doesn't share that job's filesystem, so it needs its own.
+      - name: Create data directory for DuckDB
+        run: mkdir -p data
+
       # Validates the real Azure read path: delta_scan() through the
       # azure extension, credentialed via CHAIN 'cli' the same way the
       # local Azure CLI login is (see profiles.yml) -- except here the
