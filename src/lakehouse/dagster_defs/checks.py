@@ -1,9 +1,8 @@
-"""Asset checks: today's bronze file exists, is non-empty, has expected columns."""
+"""Asset checks: today's bronze landing is non-empty and has the expected columns."""
 
-from pathlib import Path
-
-import pandas as pd
 from dagster import AssetCheckResult, asset_check
+from deltalake import DeltaTable
+from deltalake.exceptions import TableNotFoundError
 
 from lakehouse.dagster_defs.assets import (
     bronze_carbon_intensity,
@@ -11,9 +10,11 @@ from lakehouse.dagster_defs.assets import (
     bronze_elexon_system_prices,
     today,
 )
+from lakehouse.io.storage import storage_options, table_uri
 
-# These are the expected columns in the parquet file.
-EXPECTED_COLUMNS = {
+# These are the expected columns in the Delta table.
+CARBON_INTENSITY_EXPECTED_COLUMNS = {
+    "data_date",
     "from",
     "to",
     "intensity_actual",
@@ -22,44 +23,41 @@ EXPECTED_COLUMNS = {
     "loaded_at",
     "source",
 }
-# The root directory where the bronze parquet files are stored. This should match the path used in your extractor's save function.
-BRONZE_ROOT = Path("data/bronze/carbon_intensity")
 
 
 @asset_check(
     asset=bronze_carbon_intensity,
     blocking=True,  # a failure blocks downstream assets from materialising
-    description="Bronze file for today is non-empty and has the expected columns.",
+    description="Today's bronze landing is non-empty and has the expected columns.",
 )
 def bronze_carbon_intensity_schema_check() -> AssetCheckResult:
-    day_dir = BRONZE_ROOT / f"date={today()}"
-    files = sorted(day_dir.glob("*.parquet")) if day_dir.exists() else []
+    uri = table_uri("bronze", "carbon_intensity")
+    try:
+        dt = DeltaTable(uri, storage_options=storage_options())
+    except TableNotFoundError:
+        return AssetCheckResult(passed=False, metadata={"reason": f"no Delta table found at {uri}"})
 
-    if not files:
-        return AssetCheckResult(
-            passed=False,
-            metadata={"reason": f"no parquet file found in {day_dir}"},
-        )
-
-    df = pd.read_parquet(files[-1])
+    # Read only today's partition, not the whole table -- the whole point
+    # of partition_by=["data_date"] on the write side.
+    df = dt.to_pandas(partitions=[("data_date", "=", today())])
 
     if df.empty:
-        return AssetCheckResult(passed=False, metadata={"reason": "file is empty"})
+        return AssetCheckResult(passed=False, metadata={"reason": f"no rows for data_date={today()}"})
 
-    missing = EXPECTED_COLUMNS - set(df.columns)
+    missing = CARBON_INTENSITY_EXPECTED_COLUMNS - set(df.columns)
     if missing:
         return AssetCheckResult(
             passed=False,
             metadata={"missing_columns": sorted(missing)},
         )
 
-    return AssetCheckResult(passed=True, metadata={"rows": len(df)})
+    return AssetCheckResult(passed=True, metadata={"rows": len(df), "table_version": dt.version()})
 
 
-# Elexon system prices bronze keeps every landing rather than overwriting
-# (see README), so a single date directory can hold many files, one per
-# past run of this asset. Checking the most recently written one is the
-# equivalent of "today's file" for a source that never has just one.
+# Elexon system prices bronze is append-only (see README): every landing
+# for a settlement_date is still in the table, not just the latest one.
+# Filtering to today's partition and checking it is non-empty is enough --
+# it does not need to be exactly one landing's worth of rows.
 ELEXON_SYSTEM_PRICES_EXPECTED_COLUMNS = {
     "settlementDate",
     "settlementPeriod",
@@ -68,7 +66,6 @@ ELEXON_SYSTEM_PRICES_EXPECTED_COLUMNS = {
     "loaded_at",
     "source",
 }
-ELEXON_SYSTEM_PRICES_BRONZE_ROOT = Path("data/bronze/elexon_system_prices")
 
 
 @asset_check(
@@ -77,21 +74,16 @@ ELEXON_SYSTEM_PRICES_BRONZE_ROOT = Path("data/bronze/elexon_system_prices")
     description="Today's Elexon system prices landing is non-empty and has the expected columns.",
 )
 def bronze_elexon_system_prices_schema_check() -> AssetCheckResult:
-    day_dir = ELEXON_SYSTEM_PRICES_BRONZE_ROOT / f"date={today()}"
-    files = sorted(day_dir.glob("*.parquet")) if day_dir.exists() else []
+    uri = table_uri("bronze", "elexon_system_prices")
+    try:
+        dt = DeltaTable(uri, storage_options=storage_options())
+    except TableNotFoundError:
+        return AssetCheckResult(passed=False, metadata={"reason": f"no Delta table found at {uri}"})
 
-    if not files:
-        return AssetCheckResult(
-            passed=False,
-            metadata={"reason": f"no parquet file found in {day_dir}"},
-        )
-
-    # Most recently landed file for today, by file name, which sorts
-    # correctly because the loaded_at tag is a zero-padded timestamp.
-    df = pd.read_parquet(files[-1])
+    df = dt.to_pandas(partitions=[("settlementDate", "=", today())])
 
     if df.empty:
-        return AssetCheckResult(passed=False, metadata={"reason": "file is empty"})
+        return AssetCheckResult(passed=False, metadata={"reason": f"no rows for settlementDate={today()}"})
 
     missing = ELEXON_SYSTEM_PRICES_EXPECTED_COLUMNS - set(df.columns)
     if missing:
@@ -100,11 +92,11 @@ def bronze_elexon_system_prices_schema_check() -> AssetCheckResult:
             metadata={"missing_columns": sorted(missing)},
         )
 
-    return AssetCheckResult(passed=True, metadata={"rows": len(df)})
+    return AssetCheckResult(passed=True, metadata={"rows": len(df), "table_version": dt.version()})
 
 
-# Same append-only bronze, same reason a "most recent file" lookup replaces
-# a fixed file name here too.
+# Same append-only bronze, same reason a partition filter replaces a
+# "most recent file" lookup here too.
 ELEXON_GENERATION_BY_FUEL_EXPECTED_COLUMNS = {
     "settlementDate",
     "settlementPeriod",
@@ -113,7 +105,6 @@ ELEXON_GENERATION_BY_FUEL_EXPECTED_COLUMNS = {
     "loaded_at",
     "source",
 }
-ELEXON_GENERATION_BY_FUEL_BRONZE_ROOT = Path("data/bronze/elexon_generation_by_fuel")
 
 
 @asset_check(
@@ -122,19 +113,16 @@ ELEXON_GENERATION_BY_FUEL_BRONZE_ROOT = Path("data/bronze/elexon_generation_by_f
     description="Today's Elexon generation-by-fuel landing is non-empty and has the expected columns.",
 )
 def bronze_elexon_generation_by_fuel_schema_check() -> AssetCheckResult:
-    day_dir = ELEXON_GENERATION_BY_FUEL_BRONZE_ROOT / f"date={today()}"
-    files = sorted(day_dir.glob("*.parquet")) if day_dir.exists() else []
+    uri = table_uri("bronze", "elexon_generation_by_fuel")
+    try:
+        dt = DeltaTable(uri, storage_options=storage_options())
+    except TableNotFoundError:
+        return AssetCheckResult(passed=False, metadata={"reason": f"no Delta table found at {uri}"})
 
-    if not files:
-        return AssetCheckResult(
-            passed=False,
-            metadata={"reason": f"no parquet file found in {day_dir}"},
-        )
-
-    df = pd.read_parquet(files[-1])
+    df = dt.to_pandas(partitions=[("settlementDate", "=", today())])
 
     if df.empty:
-        return AssetCheckResult(passed=False, metadata={"reason": "file is empty"})
+        return AssetCheckResult(passed=False, metadata={"reason": f"no rows for settlementDate={today()}"})
 
     missing = ELEXON_GENERATION_BY_FUEL_EXPECTED_COLUMNS - set(df.columns)
     if missing:
@@ -143,4 +131,4 @@ def bronze_elexon_generation_by_fuel_schema_check() -> AssetCheckResult:
             metadata={"missing_columns": sorted(missing)},
         )
 
-    return AssetCheckResult(passed=True, metadata={"rows": len(df)})
+    return AssetCheckResult(passed=True, metadata={"rows": len(df), "table_version": dt.version()})

@@ -8,13 +8,17 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "adlfs>=2026.8.0",
+    "azure-identity>=1.25.3",
     "dagster>=1.13.16",
     "dagster-webserver>=1.13.16",
     "dbt-core>=1.12.0",
     "dbt-duckdb>=1.10.1",
+    "deltalake>=1.6.2",
     "duckdb>=1.5.5",
     "pandas>=3.0.5",
     "pyarrow>=25.0.0",
+    "python-dotenv>=1.2.2",
     "requests>=2.34.2",
 ]
 

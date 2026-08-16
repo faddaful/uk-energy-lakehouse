@@ -1,15 +1,17 @@
 """
 Call the Elexon Insights API for generation by fuel type at settlement
-period grain, check the response looks right, and save it as a parquet
-file under data/bronze/elexon_generation_by_fuel/date=YYYY-MM-DD/.
+period grain, check the response looks right, and land it as a Delta table
+under bronze/elexon_generation_by_fuel (data/bronze/... for TARGET=local,
+an ADLS container for TARGET=azure -- see lakehouse.io.storage).
 
 Same shape as carbon_intensity.py and elexon_system_prices.py: one function
-fetches, one validates, one lands. Landing is append-only, the same as
-elexon_system_prices.py and for the same reason: the file name embeds the
-loaded_at of this landing, so running this twice for the same date adds a
-second file rather than replacing the first. Bronze keeps every field the
-API returned, under the API's own field names, plus loaded_at and source.
-No cleaning, dedup, or revision resolution here; that happens in silver.
+fetches, one validates, one lands. Landing is append-only (mode="append"),
+the same as elexon_system_prices.py and for the same reason: every write
+adds rows, none ever replaces or removes an existing one, so landing the
+same settlement date twice leaves both the old and the new value sitting
+in the table side by side. Bronze keeps every field the API returned,
+under the API's own field names, plus loaded_at and source. No cleaning,
+dedup, or revision resolution here; that happens in silver.
 
 This uses the FUELHH dataset (half-hourly generation by fuel type), not
 FUELINST (five-minute instantaneous generation by fuel type). FUELHH is
@@ -27,15 +29,16 @@ prices, it just is not, on its own, unique per row here.
 import argparse
 import datetime
 import logging
-import os
 
 import pandas as pd
+from deltalake import write_deltalake
 
 from lakehouse.extractors.elexon_common import (
     expected_settlement_period_count,
     get_with_retry,
     parse_api_timestamp,
 )
+from lakehouse.io.storage import storage_options, table_uri
 
 # Use own logger to identify logging messages by module name.
 logger = logging.getLogger(__name__)
@@ -166,54 +169,30 @@ def validate_generation_by_fuel_data(df: pd.DataFrame) -> bool:
     return valid
 
 
-def save_generation_by_fuel_data(df: pd.DataFrame, date: str, base_dir: str = "data") -> None:
+def land_generation_by_fuel_data(df: pd.DataFrame) -> None:
     """
-    Save the validated generation-by-fuel data as a new parquet file.
+    Append a fetched, validated DataFrame to the bronze Delta table.
 
-    Bronze is append-only here: the file name embeds the loaded_at of this
-    landing (shared by every row, since fetch_generation_by_fuel_data()
-    stamps one loaded_at per call), so calling this again for a date that
-    was already landed writes a second file alongside the first rather
-    than replacing it. Silver is what picks a single truth out of however
-    many bronze landings exist for a given settlement_date +
-    settlement_period + fuel_type; this function's job is only to keep
-    every one of them.
-
-    Args:
-        df (pd.DataFrame): The DataFrame containing generation-by-fuel data.
-        date (str): The settlement date this data is for, in 'YYYY-MM-DD' format.
-        base_dir (str): The root directory to save under. Defaults to 'data'.
-    """
-    output_dir = os.path.join(base_dir, f"bronze/elexon_generation_by_fuel/date={date}")
-    os.makedirs(output_dir, exist_ok=True)
-
-    loaded_at_tag = df["loaded_at"].iloc[0].strftime("%Y%m%dT%H%M%SZ")
-    output_file = os.path.join(output_dir, f"elexon_generation_by_fuel_{date}_{loaded_at_tag}.parquet")
-
-    df.to_parquet(output_file, index=False)
-    # Use own logger
-    logger.info(f"Saved {len(df)} rows to {output_file}")
-
-
-def land_generation_by_fuel_data(df: pd.DataFrame, base_dir: str = "data") -> None:
-    """
-    Split a fetched, validated DataFrame by settlement date and save each
-    date's rows as its own bronze landing.
-
-    Shared by the CLI and the Dagster asset so the settlement-date grouping
-    (and the bytes-vs-str handling groupby can hand back, depending on the
-    backing dtype) lives in one place.
+    One write regardless of how many settlement dates df spans:
+    partition_by=["settlementDate"] is what makes Delta physically
+    separate each date's files, there is no need to group by date and
+    write once per date the way the pre-Delta file-per-landing version of
+    this function had to. mode="append" never replaces or removes a row,
+    so landing a settlement date that already has rows in the table adds
+    to it rather than overwriting it -- see the module docstring for why.
 
     Args:
         df (pd.DataFrame): Fetched, already-validated generation-by-fuel
             data, possibly spanning more than one settlement date.
-        base_dir (str): The root directory to save under. Defaults to 'data'.
     """
-    for settlement_date, group in df.groupby("settlementDate"):
-        date_value = settlement_date
-        if isinstance(date_value, bytes):
-            date_value = date_value.decode("utf-8")
-        save_generation_by_fuel_data(group.reset_index(drop=True), str(date_value), base_dir=base_dir)
+    write_deltalake(
+        table_uri("bronze", "elexon_generation_by_fuel"),
+        df,
+        mode="append",
+        partition_by=["settlementDate"],
+        storage_options=storage_options(),
+    )
+    logger.info(f"Landed {len(df)} rows")
 
 
 def main() -> None:

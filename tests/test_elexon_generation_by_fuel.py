@@ -9,12 +9,14 @@ import json
 import os
 
 import pandas as pd
+from deltalake import DeltaTable
 
 from lakehouse.extractors.elexon_common import parse_api_timestamp
 from lakehouse.extractors.elexon_generation_by_fuel import (
-    save_generation_by_fuel_data,
+    land_generation_by_fuel_data,
     validate_generation_by_fuel_data,
 )
+from lakehouse.io.storage import table_uri
 
 TIMESTAMP_FIELDS = ["publishTime", "startTime"]
 
@@ -88,43 +90,49 @@ def test_validate_generation_by_fuel_data_rejects_out_of_range_period():
     assert validate_generation_by_fuel_data(df) == False
 
 
-def test_save_generation_by_fuel_data(tmp_path):
+def test_land_generation_by_fuel_data(tmp_path, monkeypatch):
+    monkeypatch.setenv("TARGET", "local")
+    monkeypatch.setenv("LOCAL_DATA_ROOT", str(tmp_path))
+
     sample_data_path = os.path.join(
         os.path.dirname(__file__), 'sample_elexon_generation_by_fuel.json'
     )
     df = load_sample_data(sample_data_path)
 
-    date_str = '2026-08-08'
-    save_generation_by_fuel_data(df, date_str, base_dir=str(tmp_path / "data"))
+    land_generation_by_fuel_data(df)
 
-    output_dir = tmp_path / f"data/bronze/elexon_generation_by_fuel/date={date_str}"
-    files = sorted(output_dir.glob("*.parquet"))
-
-    assert len(files) == 1
-
-    saved_df = pd.read_parquet(files[0])
+    dt = DeltaTable(table_uri("bronze", "elexon_generation_by_fuel"))
+    saved_df = dt.to_pandas()
     assert not saved_df.empty
+    assert len(saved_df) == len(df)
 
 
-def test_save_generation_by_fuel_data_does_not_overwrite_previous_landing(tmp_path):
+def test_land_generation_by_fuel_data_does_not_overwrite_previous_landing(tmp_path, monkeypatch):
     # Bronze is append-only for Elexon: landing the same settlement date
-    # twice (as the weekly revision re-download will) must produce two
-    # files, not one file overwritten in place. Same behaviour as system
-    # prices, for the same reason.
+    # twice (as the weekly revision re-download will) must leave both
+    # landings in the table, not replace the first with the second. Same
+    # behaviour as system prices, for the same reason.
+    monkeypatch.setenv("TARGET", "local")
+    monkeypatch.setenv("LOCAL_DATA_ROOT", str(tmp_path))
+
     sample_data_path = os.path.join(
         os.path.dirname(__file__), 'sample_elexon_generation_by_fuel.json'
     )
-    date_str = '2026-08-08'
-    base_dir = str(tmp_path / "data")
 
     df_first = load_sample_data(sample_data_path)
-    save_generation_by_fuel_data(df_first, date_str, base_dir=base_dir)
+    land_generation_by_fuel_data(df_first)
 
     df_second = load_sample_data(sample_data_path)
     df_second['loaded_at'] = df_second['loaded_at'] + pd.Timedelta(seconds=1)
-    save_generation_by_fuel_data(df_second, date_str, base_dir=base_dir)
+    land_generation_by_fuel_data(df_second)
 
-    output_dir = tmp_path / f"data/bronze/elexon_generation_by_fuel/date={date_str}"
-    files = sorted(output_dir.glob("*.parquet"))
+    dt = DeltaTable(table_uri("bronze", "elexon_generation_by_fuel"))
+    saved_df = dt.to_pandas()
 
-    assert len(files) == 2
+    assert len(saved_df) == 2 * len(df_first)
+    first_key = df_first.iloc[0]
+    matching = saved_df[
+        (saved_df['settlementPeriod'] == first_key['settlementPeriod'])
+        & (saved_df['fuelType'] == first_key['fuelType'])
+    ]
+    assert matching['loaded_at'].nunique() == 2

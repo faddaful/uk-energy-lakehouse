@@ -229,3 +229,10 @@ journal.md
 .dagster_home
 dbt_packages/
 target/
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+infra/terraform/*.tfvars
+infra/terraform/.terraform.lock.hcl.bak
+infra/terraform/tfplan
+.DS_Store

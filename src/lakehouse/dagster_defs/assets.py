@@ -6,7 +6,7 @@ from dagster import MaterializeResult, MetadataValue, asset
 
 from lakehouse.extractors.carbon_intensity import (
     fetch_carbon_intensity_data,
-    save_carbon_intensity_data,
+    land_carbon_intensity_data,
     validate_carbon_intensity_data,
 )
 from lakehouse.extractors.elexon_generation_by_fuel import (
@@ -54,7 +54,7 @@ def bronze_carbon_intensity() -> MaterializeResult:
     if not validate_carbon_intensity_data(df):
         raise ValueError(f"Invalid carbon intensity data for {run_date}")
 
-    save_carbon_intensity_data(df, date=run_date)
+    land_carbon_intensity_data(df)
 
     # Runtime metadata: evaluated on every run, visible per-run in the UI.
     return MaterializeResult(

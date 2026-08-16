@@ -37,9 +37,12 @@ jobs:
       - name: Pytest
         run: uv run pytest
 
-      # 6. dbt: download packages, then build against the sample fixture data
-      #    sample instead of real data (which is not in Git). The --vars flag
-      #    overrides the source path; see the staging model change.
+      # 6. dbt: download packages, then build against the sample fixture Delta
+      #    tables instead of real bronze (which is not in Git). The --vars
+      #    flag overrides the source path; see the staging model change.
+      #    profiles.yml's `extensions: [delta]` downloads and loads DuckDB's
+      #    delta extension on connect -- needs the network access GitHub-
+      #    hosted runners already have, no extra CI step required.
       - name: dbt deps
         working-directory: dbt
         run: uv run dbt deps
@@ -50,4 +53,84 @@ jobs:
       - name: dbt build (against fixtures)
         working-directory: dbt
         run: |
-          uv run dbt build --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity/*.parquet, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices/*.parquet, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel/*.parquet}'
+          uv run dbt build --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel}'
+    env:
+      TARGET: local
+      LOCAL_DATA_ROOT: tests/fixtures
+
+  # Everything above runs cloud-free, on every push and every PR, including
+  # ones from forks. This job is different: it authenticates to the real
+  # Azure subscription, so it runs on push to main only, never on
+  # pull_request. A fork's PR runs with that PR's own (possibly modified)
+  # workflow file, so granting cloud credentials on pull_request would let
+  # any external contributor author a step that uses them. Push to main
+  # only runs code that has already been merged -- already trusted. See
+  # infra/terraform/main.tf for the federated identity credential this
+  # authenticates through: no client secret exists anywhere for this to
+  # leak, on either side.
+  azure:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    # id-token: write is what lets GitHub mint the OIDC token azure/login
+    # exchanges for an Azure access token. Nothing works without it.
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC, no client secret)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: dbt deps
+        working-directory: dbt
+        run: uv run dbt deps
+
+      # Validates the real Azure read path: delta_scan() through the
+      # azure extension, credentialed via CHAIN 'cli' the same way the
+      # local Azure CLI login is (see profiles.yml) -- except here the
+      # "CLI login" is azure/login's OIDC exchange above, not a person's
+      # `az login` session. Same 56 tests that already run locally.
+      - name: dbt build (against real Azure bronze)
+        working-directory: dbt
+        run: uv run dbt build --target azure
+        env:
+          TARGET: azure
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      # Read-only: catches infra drift or a bad infra/terraform/ change
+      # after merge. Runs every time rather than only when infra/terraform/
+      # changed -- simpler CI config, and a plan against unchanged config
+      # is a fast, free no-op, so there is little to gain from gating it.
+      #
+      # subscription_id is a required variable with no default (see
+      # variables.tf); locally it comes from terraform.tfvars, which is
+      # gitignored on purpose and so doesn't exist on this runner.
+      # TF_VAR_subscription_id supplies it here from the same secret
+      # azure/login already used above.
+      - name: terraform plan
+        working-directory: infra/terraform
+        run: |
+          terraform init
+          terraform plan -no-color
+        env:
+          TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}

@@ -1,6 +1,6 @@
-# Creates a tiny sample parquet mirroring the bronze Elexon system prices
-# schema, so CI has something to build the revision-resolution models
-# against. Run this LOCALLY from your repo root:
+# Creates a tiny sample Delta table mirroring the bronze Elexon system
+# prices schema, so CI has something to build the revision-resolution
+# models against. Run this LOCALLY from your repo root:
 #   uv run python make_elexon_system_prices_fixture.py
 #
 # Unlike make_fixture.py, this does not just grab whatever real bronze
@@ -13,9 +13,8 @@
 # settlement_period observed twice, with the second value replacing the
 # first.
 
-import os
-
 import pandas as pd
+from deltalake import write_deltalake
 
 from lakehouse.extractors.elexon_system_prices import fetch_system_prices_data
 
@@ -32,7 +31,6 @@ revised["loaded_at"] = revised["loaded_at"] + pd.Timedelta(hours=1)
 # correctly too, not just the revised case.
 sample = pd.concat([df, revised], ignore_index=True)
 
-os.makedirs("tests/fixtures/elexon_system_prices", exist_ok=True)
-sample.to_parquet("tests/fixtures/elexon_system_prices/sample.parquet", index=False)
-print(f"wrote {len(sample)} rows to tests/fixtures/elexon_system_prices/sample.parquet")
+write_deltalake("tests/fixtures/elexon_system_prices", sample, mode="overwrite")
+print(f"wrote {len(sample)} rows to tests/fixtures/elexon_system_prices")
 print(sample[["settlementDate", "settlementPeriod", "systemSellPrice", "loaded_at"]])

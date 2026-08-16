@@ -1,19 +1,17 @@
-# Creates a tiny sample parquet mirroring the bronze carbon intensity schema,
-# so CI has something to build against. Run this LOCALLY from your repo root:
+# Creates a tiny sample Delta table mirroring the bronze carbon intensity
+# schema, so CI has something to build against. Run this LOCALLY from your
+# repo root:
 #   uv run python make_fixture.py
-# It reads a few real rows from the bronze and writes them to tests/fixtures/.
+# Fetches a few real rows from the live API rather than reading local
+# bronze, so this works even before you have ever run the extractor, and
+# so the fixture always matches whatever the extractor's schema is today.
 
-import glob
-import os
+from deltalake import write_deltalake
 
-import pandas as pd
+from lakehouse.extractors.carbon_intensity import fetch_carbon_intensity_data
 
-# grab whatever bronze parquet you already have
-files = sorted(glob.glob("data/bronze/carbon_intensity/*/*.parquet"))
-assert files, "no bronze parquet found; run your extractor first"
-df = pd.read_parquet(files[-1]).head(3)   # 3 rows is plenty
+df = fetch_carbon_intensity_data("2026-08-14", "2026-08-15", "8").head(3).reset_index(drop=True)
 
-os.makedirs("tests/fixtures/carbon_intensity", exist_ok=True)
-df.to_parquet("tests/fixtures/carbon_intensity/sample.parquet", index=False)
-print(f"wrote {len(df)} rows to tests/fixtures/carbon_intensity/sample.parquet")
+write_deltalake("tests/fixtures/carbon_intensity", df, mode="overwrite")
+print(f"wrote {len(df)} rows to tests/fixtures/carbon_intensity")
 print(df)
