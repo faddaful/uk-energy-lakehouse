@@ -1,0 +1,77 @@
+{
+  "metadata": null,
+  "data": [
+    {
+      "dataset": "FUELHH",
+      "publishTime": "2026-08-08T23:00:00Z",
+      "startTime": "2026-08-08T22:30:00Z",
+      "settlementDate": "2026-08-08",
+      "settlementPeriod": 48,
+      "fuelType": "BIOMASS",
+      "generation": 2484
+    },
+    {
+      "dataset": "FUELHH",
+      "publishTime": "2026-08-08T23:00:00Z",
+      "startTime": "2026-08-08T22:30:00Z",
+      "settlementDate": "2026-08-08",
+      "settlementPeriod": 48,
+      "fuelType": "CCGT",
+      "generation": 5147
+    },
+    {
+      "dataset": "FUELHH",
+      "publishTime": "2026-08-08T23:00:00Z",
+      "startTime": "2026-08-08T22:30:00Z",
+      "settlementDate": "2026-08-08",
+      "settlementPeriod": 48,
+      "fuelType": "NUCLEAR",
+      "generation": 3868
+    },
+    {
+      "dataset": "FUELHH",
+      "publishTime": "2026-08-08T23:00:00Z",
+      "startTime": "2026-08-08T22:30:00Z",
+      "settlementDate": "2026-08-08",
+      "settlementPeriod": 48,
+      "fuelType": "WIND",
+      "generation": 8568
+    },
+    {
+      "dataset": "FUELHH",
+      "publishTime": "2026-08-07T23:30:00Z",
+      "startTime": "2026-08-07T23:00:00Z",
+      "settlementDate": "2026-08-08",
+      "settlementPeriod": 1,
+      "fuelType": "BIOMASS",
+      "generation": 2552
+    },
+    {
+      "dataset": "FUELHH",
+      "publishTime": "2026-08-07T23:30:00Z",
+      "startTime": "2026-08-07T23:00:00Z",
+      "settlementDate": "2026-08-08",
+      "settlementPeriod": 1,
+      "fuelType": "CCGT",
+      "generation": 8046
+    },
+    {
+      "dataset": "FUELHH",
+      "publishTime": "2026-08-07T23:30:00Z",
+      "startTime": "2026-08-07T23:00:00Z",
+      "settlementDate": "2026-08-08",
+      "settlementPeriod": 1,
+      "fuelType": "NUCLEAR",
+      "generation": 3994
+    },
+    {
+      "dataset": "FUELHH",
+      "publishTime": "2026-08-07T23:30:00Z",
+      "startTime": "2026-08-07T23:00:00Z",
+      "settlementDate": "2026-08-08",
+      "settlementPeriod": 1,
+      "fuelType": "WIND",
+      "generation": 5441
+    }
+  ]
+}

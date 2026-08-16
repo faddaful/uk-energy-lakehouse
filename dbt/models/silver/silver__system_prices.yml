@@ -1,0 +1,45 @@
+# Tests for the silver model. Filename: silver__system_prices.yml, sits
+# next to the .sql file in models/silver/.
+
+version: 2
+
+models:
+  - name: silver__system_prices
+    description: >
+      One row per settlement_date + settlement_period, resolved to the
+      latest loaded_at seen in bronze. The trustworthy layer downstream
+      models (and, later, gold) build on.
+    tests:
+      # Exactly one resolved row per settlement_date + settlement_period:
+      # the core correctness property of the resolution logic.
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - settlement_date
+              - settlement_period
+    columns:
+      - name: settlement_date
+        tests:
+          - not_null
+      - name: settlement_period
+        tests:
+          - not_null
+      - name: system_sell_price
+        description: >
+          Resolved system sell price (GBP/MWh). Imbalance prices can go
+          sharply negative or positive in extreme system conditions, so
+          the bound here is wide on purpose; it is a sanity check for a
+          broken feed or unit error, not a plausibility filter on genuine
+          market prices.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: -2000
+                max_value: 6000
+      - name: system_buy_price
+        tests:
+          - not_null
+      - name: loaded_at
+        tests:
+          - not_null
