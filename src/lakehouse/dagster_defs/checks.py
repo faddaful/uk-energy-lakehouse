@@ -7,6 +7,7 @@ from dagster import AssetCheckResult, asset_check
 
 from lakehouse.dagster_defs.assets import (
     bronze_carbon_intensity,
+    bronze_elexon_generation_by_fuel,
     bronze_elexon_system_prices,
     today,
 )
@@ -93,6 +94,49 @@ def bronze_elexon_system_prices_schema_check() -> AssetCheckResult:
         return AssetCheckResult(passed=False, metadata={"reason": "file is empty"})
 
     missing = ELEXON_SYSTEM_PRICES_EXPECTED_COLUMNS - set(df.columns)
+    if missing:
+        return AssetCheckResult(
+            passed=False,
+            metadata={"missing_columns": sorted(missing)},
+        )
+
+    return AssetCheckResult(passed=True, metadata={"rows": len(df)})
+
+
+# Same append-only bronze, same reason a "most recent file" lookup replaces
+# a fixed file name here too.
+ELEXON_GENERATION_BY_FUEL_EXPECTED_COLUMNS = {
+    "settlementDate",
+    "settlementPeriod",
+    "fuelType",
+    "generation",
+    "loaded_at",
+    "source",
+}
+ELEXON_GENERATION_BY_FUEL_BRONZE_ROOT = Path("data/bronze/elexon_generation_by_fuel")
+
+
+@asset_check(
+    asset=bronze_elexon_generation_by_fuel,
+    blocking=True,
+    description="Today's Elexon generation-by-fuel landing is non-empty and has the expected columns.",
+)
+def bronze_elexon_generation_by_fuel_schema_check() -> AssetCheckResult:
+    day_dir = ELEXON_GENERATION_BY_FUEL_BRONZE_ROOT / f"date={today()}"
+    files = sorted(day_dir.glob("*.parquet")) if day_dir.exists() else []
+
+    if not files:
+        return AssetCheckResult(
+            passed=False,
+            metadata={"reason": f"no parquet file found in {day_dir}"},
+        )
+
+    df = pd.read_parquet(files[-1])
+
+    if df.empty:
+        return AssetCheckResult(passed=False, metadata={"reason": "file is empty"})
+
+    missing = ELEXON_GENERATION_BY_FUEL_EXPECTED_COLUMNS - set(df.columns)
     if missing:
         return AssetCheckResult(
             passed=False,

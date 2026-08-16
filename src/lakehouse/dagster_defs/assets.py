@@ -9,6 +9,11 @@ from lakehouse.extractors.carbon_intensity import (
     save_carbon_intensity_data,
     validate_carbon_intensity_data,
 )
+from lakehouse.extractors.elexon_generation_by_fuel import (
+    fetch_generation_by_fuel_data,
+    land_generation_by_fuel_data,
+    validate_generation_by_fuel_data,
+)
 from lakehouse.extractors.elexon_system_prices import (
     fetch_system_prices_data,
     land_system_prices_data,
@@ -84,6 +89,39 @@ def bronze_elexon_system_prices() -> MaterializeResult:
         raise ValueError(f"Invalid Elexon system prices data for {start_date} to {end_date}")
 
     land_system_prices_data(df)
+
+    return MaterializeResult(
+        metadata={
+            "start_date": MetadataValue.text(start_date),
+            "end_date": MetadataValue.text(end_date),
+            "rows": MetadataValue.int(len(df)),
+        }
+    )
+
+
+@asset(
+    name="bronze_elexon_generation_by_fuel",
+    description=(
+        "Re-download the trailing settlement dates for Elexon generation by fuel type and "
+        "land each date as a new bronze file. Same revision-catching design as "
+        "bronze_elexon_system_prices: landing here never overwrites, so every value ever "
+        "observed for a settlement_date + settlement_period + fuel_type stays in bronze "
+        "for silver to compare."
+    ),
+    metadata={"source": MetadataValue.text("elexon_insights_generation_by_fuel")},
+)
+def bronze_elexon_generation_by_fuel() -> MaterializeResult:
+    end_date = today()
+    start_date = (
+        datetime.date.fromisoformat(end_date) - datetime.timedelta(days=REVISION_WINDOW_DAYS - 1)
+    ).isoformat()
+
+    df = fetch_generation_by_fuel_data(start_date=start_date, end_date=end_date)
+
+    if not validate_generation_by_fuel_data(df):
+        raise ValueError(f"Invalid Elexon generation-by-fuel data for {start_date} to {end_date}")
+
+    land_generation_by_fuel_data(df)
 
     return MaterializeResult(
         metadata={

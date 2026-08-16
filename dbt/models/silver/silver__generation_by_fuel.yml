@@ -1,0 +1,44 @@
+# Tests for the silver model. Filename: silver__generation_by_fuel.yml,
+# sits next to the .sql file in models/silver/.
+
+version: 2
+
+models:
+  - name: silver__generation_by_fuel
+    description: >
+      One row per settlement_date + settlement_period + fuel_type,
+      resolved to the latest loaded_at seen in bronze.
+    tests:
+      # Exactly one resolved row per key: the core correctness property
+      # of the resolution logic.
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - settlement_date
+              - settlement_period
+              - fuel_type
+    columns:
+      - name: settlement_date
+        tests:
+          - not_null
+      - name: settlement_period
+        tests:
+          - not_null
+      - name: fuel_type
+        tests:
+          - not_null
+      - name: generation_mw
+        description: >
+          Generation cannot be negative for this dataset (it is output by
+          fuel type, not a net/interconnector flow that could be), so the
+          lower bound is a real constraint, not just a sanity margin. The
+          upper bound is a loose sanity check against a unit error.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 50000
+      - name: loaded_at
+        tests:
+          - not_null
