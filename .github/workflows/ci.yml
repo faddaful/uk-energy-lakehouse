@@ -89,6 +89,39 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      # Terraform runs early in this job, before dbt, on purpose: dbt
+      # needs to know which storage account to read, and that name is not
+      # something to hardcode here or duplicate into a 4th GitHub secret
+      # kept in sync by hand. It changes on every `make teardown` +
+      # reapply (see variables.tf / journal), and a hardcoded or
+      # manually-updated copy would go stale exactly the way
+      # AZURE_CLIENT_ID already did earlier today. Terraform state is the
+      # one real source of truth for this value, so CI reads it from
+      # there, same as everything else in this project that touches
+      # Azure resource names.
+      #
+      # subscription_id is a required variable with no default (see
+      # variables.tf); locally it comes from terraform.tfvars, which is
+      # gitignored on purpose and so doesn't exist on this runner.
+      # TF_VAR_subscription_id supplies it here from the same secret
+      # azure/login already used above.
+      - name: terraform init
+        working-directory: infra/terraform
+        run: terraform init
+        env:
+          TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Read Azure resource names from Terraform state
+        working-directory: infra/terraform
+        run: |
+          echo "AZURE_STORAGE_ACCOUNT_NAME=$(terraform output -raw storage_account_name)" >> "$GITHUB_ENV"
+          echo "AZURE_STORAGE_CONTAINER=$(terraform output -raw container_name)" >> "$GITHUB_ENV"
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
@@ -106,31 +139,20 @@ jobs:
       # local Azure CLI login is (see profiles.yml) -- except here the
       # "CLI login" is azure/login's OIDC exchange above, not a person's
       # `az login` session. Same 56 tests that already run locally.
+      # AZURE_STORAGE_ACCOUNT_NAME / AZURE_STORAGE_CONTAINER come from the
+      # step above, already in the job environment by this point.
       - name: dbt build (against real Azure bronze)
         working-directory: dbt
         run: uv run dbt build --target azure
         env:
           TARGET: azure
 
-      - name: Install Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_wrapper: false
-
       # Read-only: catches infra drift or a bad infra/terraform/ change
       # after merge. Runs every time rather than only when infra/terraform/
       # changed -- simpler CI config, and a plan against unchanged config
       # is a fast, free no-op, so there is little to gain from gating it.
-      #
-      # subscription_id is a required variable with no default (see
-      # variables.tf); locally it comes from terraform.tfvars, which is
-      # gitignored on purpose and so doesn't exist on this runner.
-      # TF_VAR_subscription_id supplies it here from the same secret
-      # azure/login already used above.
       - name: terraform plan
         working-directory: infra/terraform
-        run: |
-          terraform init
-          terraform plan -no-color
+        run: terraform plan -no-color
         env:
           TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
