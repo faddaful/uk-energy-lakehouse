@@ -1,17 +1,19 @@
 """
 Call the Elexon Insights API for system buy/sell price and imbalance data
-at settlement period grain, check the response looks right, and save it as
-a parquet file under data/bronze/elexon_system_prices/date=YYYY-MM-DD/.
+at settlement period grain, check the response looks right, and land it as
+a Delta table under bronze/elexon_system_prices (data/bronze/... for
+TARGET=local, an ADLS container for TARGET=azure -- see lakehouse.io.storage).
 
 Same shape as carbon_intensity.py: one function fetches, one validates, one
-lands. Unlike carbon_intensity.py, landing here is append-only, not
-idempotent-by-overwrite: the file name embeds the loaded_at of this landing,
-so running this twice for the same date adds a second file rather than
-replacing the first. Elexon can revise a published price after the fact;
-overwriting bronze on every re-download would throw away the earlier value
-a revision audit needs to diff against. Carbon Intensity has no revision
-concept, so overwriting there is correct and simpler. See the README for
-the fuller version of this distinction.
+lands. Unlike carbon_intensity.py, landing here is append-only
+(mode="append"), not idempotent-by-overwrite: every write adds rows, none
+ever replaces or removes an existing one, so landing the same settlement
+date twice leaves both the old and the new value sitting in the table side
+by side. Elexon can revise a published price after the fact; overwriting
+bronze on every re-download would throw away the earlier value a revision
+audit needs to diff against. Carbon Intensity has no revision concept, so
+overwriting there is correct and simpler. See the README for the fuller
+version of this distinction.
 
 Bronze keeps every field the API returned, using the API's own field names,
 plus loaded_at and source. No cleaning, dedup, or revision resolution here.
@@ -30,15 +32,16 @@ a given date is computed, not hardcoded, in elexon_common.py.
 import argparse
 import datetime
 import logging
-import os
 
 import pandas as pd
+from deltalake import write_deltalake
 
 from lakehouse.extractors.elexon_common import (
     expected_settlement_period_count,
     get_with_retry,
     parse_api_timestamp,
 )
+from lakehouse.io.storage import storage_options, table_uri
 
 # Use own logger to identify logging messages by module name.
 logger = logging.getLogger(__name__)
@@ -163,55 +166,30 @@ def validate_system_prices_data(df: pd.DataFrame) -> bool:
     return valid
 
 
-def save_system_prices_data(df: pd.DataFrame, date: str, base_dir: str = "data") -> None:
+def land_system_prices_data(df: pd.DataFrame) -> None:
     """
-    Save the validated system prices data as a new parquet file.
+    Append a fetched, validated DataFrame to the bronze Delta table.
 
-    Bronze is append-only here: the file name embeds the loaded_at of this
-    landing (shared by every row, since fetch_system_prices_data() stamps
-    one loaded_at per call), so calling this again for a date that was
-    already landed writes a second file alongside the first rather than
-    replacing it. Silver is what picks a single truth out of however many
-    bronze landings exist for a given settlement_date + settlement_period;
-    this function's job is only to keep every one of them.
-
-    Args:
-        df (pd.DataFrame): The DataFrame containing system prices data.
-        date (str): The settlement date this data is for, in 'YYYY-MM-DD' format.
-        base_dir (str): The root directory to save under. Defaults to 'data'.
-    """
-    output_dir = os.path.join(base_dir, f"bronze/elexon_system_prices/date={date}")
-    os.makedirs(output_dir, exist_ok=True)
-
-    loaded_at_tag = df["loaded_at"].iloc[0].strftime("%Y%m%dT%H%M%SZ")
-    output_file = os.path.join(output_dir, f"elexon_system_prices_{date}_{loaded_at_tag}.parquet")
-
-    df.to_parquet(output_file, index=False)
-    # Use own logger
-    logger.info(f"Saved {len(df)} rows to {output_file}")
-
-
-def land_system_prices_data(df: pd.DataFrame, base_dir: str = "data") -> None:
-    """
-    Split a fetched, validated DataFrame by settlement date and save each
-    date's rows as its own bronze landing.
-
-    Shared by the CLI and the Dagster asset so the settlement-date grouping
-    (and the bytes-vs-str handling groupby can hand back, depending on the
-    backing dtype) lives in one place.
+    One write regardless of how many settlement dates df spans:
+    partition_by=["settlementDate"] is what makes Delta physically
+    separate each date's files, there is no need to group by date and
+    write once per date the way the pre-Delta file-per-landing version of
+    this function had to. mode="append" never replaces or removes a row,
+    so landing a settlement date that already has rows in the table adds
+    to it rather than overwriting it -- see the module docstring for why.
 
     Args:
         df (pd.DataFrame): Fetched, already-validated system prices data,
             possibly spanning more than one settlement date.
-        base_dir (str): The root directory to save under. Defaults to 'data'.
     """
-    for settlement_date, group in df.groupby("settlementDate"):
-        settlement_date_str = (
-            settlement_date.decode()
-            if isinstance(settlement_date, (bytes, bytearray))
-            else str(settlement_date)
-        )
-        save_system_prices_data(group.reset_index(drop=True), settlement_date_str, base_dir=base_dir)
+    write_deltalake(
+        table_uri("bronze", "elexon_system_prices"),
+        df,
+        mode="append",
+        partition_by=["settlementDate"],
+        storage_options=storage_options(),
+    )
+    logger.info(f"Landed {len(df)} rows")
 
 
 def main() -> None:

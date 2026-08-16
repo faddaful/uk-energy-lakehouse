@@ -4,13 +4,64 @@
 #
 # dbt normally looks for this file in ~/.dbt/, but also finds it in the
 # current directory. Keeping it in the repo is fine here because it contains
-# no secrets, only a local file path. If dbt ever complains it cannot find
-# a profile, run with: uv run dbt build --profiles-dir .
+# no secrets, only a local file path (the azure target's credential comes
+# from the Azure CLI's cached login at connect time, via `secrets:` below,
+# never from a value written into this file). If dbt ever complains it
+# cannot find a profile, run with: uv run dbt build --profiles-dir .
+#
+# Two targets, mirroring the TARGET=local|azure switch the Python
+# extractors read (lakehouse.io.storage): `local` reads bronze off local
+# disk, `azure` reads it from the ADLS container Terraform created. Both
+# read Delta tables through DuckDB's delta extension either way; azure
+# additionally needs the azure extension to reach abfss:// at all.
 
 lakehouse:
-  target: dev
+  target: local
   outputs:
-    dev:
+    local:
       type: duckdb
       path: ../data/lakehouse.duckdb
       threads: 4
+      # Bronze is Delta tables, not plain parquet, as of Step 3.3 (see
+      # README). Staging models read them with delta_scan(), which needs
+      # this extension installed and loaded on every connection.
+      extensions:
+        - delta
+
+    azure:
+      type: duckdb
+      # A separate file from the local target's, deliberately: silver's
+      # incremental models merge into whatever table already exists, and
+      # local/azure read entirely different bronze data. Sharing one file
+      # was tried first and broke immediately -- switching to this target
+      # left 90 days of resolved rows sourced from local bronze sitting in
+      # silver__system_prices with no matching row in Azure's one-day
+      # bronze, and resolved_values_match_bronze_source correctly failed
+      # loudly on all ~4300 of them. Separate files means each target's
+      # incremental state can only ever be reconciled against its own
+      # bronze, which is what "two independent environments" has to mean.
+      path: ../data/lakehouse_azure.duckdb
+      threads: 4
+      extensions:
+        - delta
+        - azure
+      settings:
+        # Cross-platform HTTP transport for the azure extension. Without
+        # this it defaults to a platform-specific adapter that has been
+        # flaky enough elsewhere to be worth pinning explicitly rather
+        # than debugging once, later, under time pressure.
+        azure_transport_option_type: curl
+      # Generates a CREATE SECRET statement dbt-duckdb runs before the
+      # rest of the run. CHAIN 'cli' is pinned deliberately, not left to
+      # the default credential chain: the delta extension and the azure
+      # extension resolve credentials through different Rust crates with
+      # different chain orderings, and leaving it open produced a real,
+      # reproduced failure here -- delta_scan() tried the Azure Instance
+      # Metadata Service (managed identity) first, timed out after ten
+      # retries, and never got to the CLI credential at all. Naming the
+      # chain removes the ambiguity.
+      secrets:
+        - type: azure
+          provider: credential_chain
+          chain: cli
+          account_name: "{{ env_var('AZURE_STORAGE_ACCOUNT_NAME') }}"

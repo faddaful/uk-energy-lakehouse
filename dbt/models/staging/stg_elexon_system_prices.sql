@@ -1,28 +1,29 @@
--- Staging: read bronze parquet, rename to clean names, cast types.
--- No business logic here. One staging model per bronze source.
+-- Staging: read bronze (a Delta table, not plain parquet -- see README),
+-- rename to clean names, cast types. No business logic here. One staging
+-- model per bronze source.
 --
--- Unlike stg_carbon_intensity.sql, the same glob here can match many files
--- per settlement date: bronze never overwrites for Elexon (see the README
--- for why), so every past landing of the same date is still on disk, each
--- with its own loaded_at. That is deliberate and this model does not
--- collapse it; silver is where one truth per settlement_date +
--- settlement_period gets picked.
+-- Bronze never overwrites for Elexon (see the README for why): every past
+-- landing of the same settlement date is still in the table, each with its
+-- own loaded_at, because writes here use mode="append". That is deliberate
+-- and this model does not collapse it; silver is where one truth per
+-- settlement_date + settlement_period gets picked.
 --
--- The path is relative to the dbt/ folder, hence ../data/...
+-- {{ bronze('elexon_system_prices') }} resolves to a delta_scan() over
+-- either local disk or the Azure ADLS container, depending on the dbt
+-- target (--target local|azure) -- see macros/bronze.sql and README. On
+-- the local target it still reads its path from the
+-- elexon_system_prices_path var, the same CI-fixture-override mechanism
+-- as before:
+--   local  -> real bronze data (the default)
+--   CI     -> fixture sample (passed via --vars)
+--
+-- delta_scan() reads the table as of its latest committed version; the
+-- delta extension that provides it is loaded on every connection via
+-- profiles.yml.
 --
 -- ADJUST the column names on the left of each AS to match your actual
--- parquet schema. Open a file to check:
---   uv run python -c "import pandas as pd; print(pd.read_parquet('data/bronze/elexon_system_prices/date=2026-08-08').dtypes)"
---
--- Source path is a dbt var so it can differ between environments, the same
--- pattern as stg_carbon_intensity.sql:
---   local  -> real bronze data (the default below)
---   CI     -> fixture sample (passed via --vars)
-
-{% set elexon_system_prices_path = var(
-    'elexon_system_prices_path',
-    '../data/bronze/elexon_system_prices/*/*.parquet'
-) %}
+-- schema. Open the table to check:
+--   uv run python -c "from deltalake import DeltaTable; print(DeltaTable('data/bronze/elexon_system_prices').to_pandas().dtypes)"
 
 select
     cast(settlementDate as date)         as settlement_date,
@@ -35,4 +36,4 @@ select
     cast(netImbalanceVolume as double)   as net_imbalance_volume,
     cast(loaded_at as timestamp)         as loaded_at,
     source
-from read_parquet('{{ elexon_system_prices_path }}')
+from {{ bronze('elexon_system_prices') }}
