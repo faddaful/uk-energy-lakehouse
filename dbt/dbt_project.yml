@@ -49,6 +49,25 @@ vars:
     marts_prefixes: ["mart_"]
 
 models:
+  # dbt_project_evaluator's ~60 models are disabled by default -- true
+  # only when explicitly passed, e.g.:
+  #   uv run dbt build --select package:dbt_project_evaluator dbt_project_evaluator_exceptions --vars 'run_evaluator: true'
+  # Disabled nodes never enter the manifest at all, not just the
+  # selection: a plain `dbt docs generate` (what publishes to GitHub
+  # Pages) no longer includes any of them, which is the actual point --
+  # without this, a visitor's first screen on the published site was
+  # dbt_project_evaluator's own overview page instead of this project's
+  # (see models/overview.md), because dbt picks whichever installed
+  # package's __overview__ doc block happens to parse first when more
+  # than one exists, and this project didn't have one of its own until
+  # now. The `"{{ ... }}"` quoting matters: dbt renders a config value
+  # that is a single whole Jinja expression natively, returning a real
+  # Python bool from var(), not the string "True"/"False" -- confirmed
+  # by actually toggling the var and checking the resulting model count
+  # in `dbt parse` output, not assumed from how the syntax reads.
+  dbt_project_evaluator:
+    +enabled: "{{ var('run_evaluator', false) }}"
+
   lakehouse:
     staging:
       # Views: cheap, always fresh, recomputed on query.

@@ -80,11 +80,17 @@ Four dimensions, three incremental facts, three marts, all in `dbt/models/gold/`
 
 `uk_bank_holidays` (England & Wales, Scotland, Northern Ireland, 2023-2028) comes from the gov.uk bank holidays API, the canonical source. Only England & Wales feeds `dim_date.is_working_day` today.
 
-Every gold model and non-obvious column has a description; run `cd dbt && uv run dbt docs generate --static` to build the lineage graph and column catalog locally, or see the published version once GitHub Pages is enabled for this repo (Settings → Pages → source: GitHub Actions — `.github/workflows/docs.yml` builds and deploys it from committed fixtures on every push to `main`, no Azure credentials needed, same principle as CI's own build job).
+Every gold model and non-obvious column has a description; run `cd dbt && uv run dbt docs generate --static` to build the lineage graph and column catalog locally, or browse the published version at **[faddaful.github.io/uk-energy-lakehouse](https://faddaful.github.io/uk-energy-lakehouse/)** — built from committed fixtures on every push to `main` (`.github/workflows/docs.yml`), no Azure credentials needed, same principle as CI's own build job.
 
 ## Auditing the project
 
-[`dbt_project_evaluator`](https://github.com/dbt-labs/dbt-project-evaluator) audits the *project*, not the data: DAG shape, naming conventions, folder structure, and test/documentation coverage. `uv run dbt build --select package:dbt_project_evaluator dbt_project_evaluator_exceptions` runs it standalone; it also runs as part of a plain `dbt build`, since it's just another installed package.
+[`dbt_project_evaluator`](https://github.com/dbt-labs/dbt-project-evaluator) audits the *project*, not the data: DAG shape, naming conventions, folder structure, and test/documentation coverage. It is opt-in, not part of a plain `dbt build`:
+
+```bash
+uv run dbt build --select package:dbt_project_evaluator dbt_project_evaluator_exceptions --vars 'run_evaluator: true'
+```
+
+Its ~60 models are disabled by default (`dbt_project.yml`: `models: dbt_project_evaluator: +enabled: "{{ var('run_evaluator', false) }}"`) and only come alive with that flag. This isn't just about keeping ordinary `dbt build` runs smaller -- disabled nodes never enter the manifest at all, so a plain `dbt docs generate` (what publishes to GitHub Pages) no longer includes any of them either. Without this, the published site's first screen was `dbt_project_evaluator`'s own project tab instead of this one's, because with more than one package's models in the manifest, the docs site has more than one project to land on and doesn't reliably pick the root project first. Fixed alongside a real `models/overview.md` (`{% docs __overview__ %}`), since this project didn't have one of its own to prefer over the noise either.
 
 It needs configuration, not just installation, to say anything useful here. Its defaults assume the standard `staging -> intermediate -> marts` layering; this project is `staging -> silver -> gold` (with gold split into `dimensions`/`facts`/`marts`), so `dbt_project.yml` maps every one of those five folders and their real prefixes (`stg_`, `silver_`, `dim_`, `fct_`, `mart_`) into the package's `model_types` variable explicitly. Left on defaults, it would have flagged every model in the project as being in the wrong folder for a layering this project never had.
 
@@ -174,7 +180,7 @@ If `uv run python -m lakehouse...` fails with `ModuleNotFoundError: No module na
 ## Roadmap
 
 - Phase 2 remaining: a `make teardown` target to `terraform destroy` on demand; and once a real Elexon revision has actually been captured in the wild (not just the synthetic fixture scenario), a small script showing the same settlement period at two Delta table versions with different prices, using Delta's time travel -- the actual "my pipeline noticed the official price changed" demo.
-- Phase 3 remaining: enable GitHub Pages for the published dbt docs (workflow is in place, just needs the repo setting flipped); a Dagster asset that exports the three gold marts to `public-data/` and/or ADLS for a dashboard to read; a Power BI dashboard; a personal Streamlit dashboard reachable on mobile; and the one open finding from [Auditing the project](#auditing-the-project) -- turning `macros/bronze.sql` into real dbt `source()` definitions so bronze actually appears in the DAG and the published lineage graph, instead of being a literal `delta_scan()` path string dbt can't see.
+- Phase 3 remaining: a Dagster asset that exports the three gold marts to `public-data/` and/or ADLS for a dashboard to read; a Power BI dashboard; a personal Streamlit dashboard reachable on mobile; and the one open finding from [Auditing the project](#auditing-the-project) -- turning `macros/bronze.sql` into real dbt `source()` definitions so bronze actually appears in the DAG and the published lineage graph, instead of being a literal `delta_scan()` path string dbt can't see.
 - Phase 4 and uniqueness layer: NESO demand forecast accuracy, a connections-queue observatory built on the public TEC register, published analysis of price revisions, a small public data product, and a personal dynamic-tariff cost comparison.
 
 ## Notes
