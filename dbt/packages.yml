@@ -6,3 +6,10 @@ packages:
     version: [">=1.1.0", "<2.0.0"]
   - package: metaplane/dbt_expectations
     version: [">=0.10.0", "<0.11.0"]
+  # Audits the project itself (DAG shape, naming, test/doc coverage,
+  # fanout) rather than the data. Officially supports DuckDB, but needs
+  # the dispatch config in dbt_project.yml below to find its macros --
+  # see this project's own README section on it for what the audit
+  # found.
+  - package: dbt-labs/dbt_project_evaluator
+    version: [">=1.3.0", "<2.0.0"]

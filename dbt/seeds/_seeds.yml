@@ -1,0 +1,151 @@
+# Seeds: small, mostly-static reference data checked into the repo as
+# CSV, loaded with `uv run dbt seed`. Column types are pinned explicitly
+# here rather than left to dbt's type inference, so a seed cannot land as
+# a varchar on one machine and an integer on another depending on which
+# row of the CSV a fast type-sniff happened to look at first.
+#
+# Named seed_<x>, not dim_<x>: a seed and a gold dimension model sharing
+# one name (as this project's companion guide originally suggested) is
+# only a deprecation warning on the current dbt version, not a hard
+# error -- confirmed by actually running `dbt parse` with that naming
+# before deciding it needed fixing, not assumed from the docs. It reads
+# "Found resources with the same name 'dim_region'... Please update one
+# of the resources to have a unique name" and is explicitly flagged as
+# functionality being removed. Renaming the seed now avoids inheriting a
+# future breaking change for free.
+
+version: 2
+
+seeds:
+  # dbt_project_evaluator_exceptions is deliberately NOT declared here.
+  # Reproduced directly: even a bare `- name: dbt_project_evaluator_exceptions`
+  # entry with no other keys makes dbt 1.12 refuse to parse at all --
+  # "dbt found two schema.yml entries for the same resource" -- because
+  # the installed package ships its own seeds/seeds.yml describing a
+  # seed of that exact name, and dbt does not scope that collision check
+  # by package the way ref() resolution itself is scoped. The seed still
+  # works and still gets picked up over the package's own (see
+  # dbt_project.yml's +enabled: false on the package's version, and its
+  # own comment on why ref() resolves to ours) -- it just cannot also
+  # have a property-file entry in this project. Column types are set via
+  # dbt_project.yml's seed config instead, which needs no schema.yml
+  # entry to work.
+  - name: seed_region
+    description: >
+      The Carbon Intensity API's 14 DNO regions, plus the three country
+      aggregates (England, Scotland, Wales) and Great Britain as a whole
+      -- 18 rows total, region_id 1 to 18. gold/dimensions/dim_region.sql
+      adds a surrogate key on top of this; this seed is the natural key
+      and its attributes.
+    config:
+      column_types:
+        region_id: integer
+        region_name: varchar
+        region_short_name: varchar
+        country: varchar
+        gsp_group_id: varchar
+        is_aggregate: boolean
+    columns:
+      - name: region_id
+        description: Carbon Intensity API region ID (1 to 18).
+        tests:
+          - not_null
+          - unique
+      - name: country
+        description: >
+          Simplification, not a clean partition: region 6, "North Wales
+          and Merseyside", spans both Wales and England (Merseyside), and
+          is recorded here as Wales. Stated plainly rather than hidden,
+          since anyone aggregating this column by country should know
+          that one region crosses the boundary.
+      - name: gsp_group_id
+        description: >
+          Standard DNO licence area lettering (e.g. "_A" for UKPN East),
+          the same identifiers Elexon and NESO use for GB distribution
+          regions. Verified against Sheffield Solar's public PV_Live API
+          (https://api.pvlive.uk/pvlive/api/v4/pes_list), an independent
+          source that ships this exact letter-to-region table, rather
+          than assumed from the guide this project follows. NULL for the
+          four aggregate rows (country/GB totals), which have no single
+          licence area.
+      - name: is_aggregate
+        description: >
+          True for the four rows (England, Scotland, Wales, Great
+          Britain) that are roll-ups rather than one of the 14 real DNO
+          regions.
+        tests:
+          - not_null
+
+  - name: seed_fuel_type
+    description: >
+      Elexon FUELHH fuel type codes, grouped into categories. All 20
+      codes here were confirmed present in this project's own real
+      bronze data (data/bronze/elexon_generation_by_fuel, 90 days,
+      2026-05-18 to 2026-08-16) before this seed was written, not
+      assumed from a spec -- `select distinct fuelType` matched exactly.
+    config:
+      column_types:
+        fuel_type_code: varchar
+        fuel_type_name: varchar
+        fuel_category: varchar
+        is_renewable: boolean
+        is_interconnector: boolean
+        is_dispatchable: boolean
+        sort_order: integer
+    columns:
+      - name: fuel_type_code
+        description: Elexon's FUELHH code, e.g. CCGT, WIND, INTFR. Natural key.
+        tests:
+          - not_null
+          - unique
+      - name: is_renewable
+        description: >
+          Deliberately a separate flag from is_interconnector, not one
+          combined category: an interconnector's carbon content depends
+          on the exporting country's generation mix at that moment, which
+          this data cannot tell you. Imports are never classified as
+          clean or dirty here.
+        tests:
+          - not_null
+      - name: is_interconnector
+        description: True for the ten INT* codes (IFA, BritNed, Viking Link, etc.).
+        tests:
+          - not_null
+      - name: sort_order
+        description: >
+          Fixes the stacking order fuels appear in on every chart, so it
+          only needs to be defined once here rather than hardcoded in
+          every Streamlit/Power BI visual that plots the mix.
+        tests:
+          - not_null
+          - unique
+
+  - name: uk_bank_holidays
+    description: >
+      England-and-Wales, Scotland and Northern Ireland bank holidays,
+      2023 to 2028, downloaded from the gov.uk bank holidays API
+      (https://www.gov.uk/bank-holidays.json) -- the canonical source --
+      on 2026-08-16. Only england-and-wales is used by dim_date's
+      is_working_day/is_bank_holiday columns today; the other two nations
+      are kept in the seed in case a later phase needs them.
+    config:
+      column_types:
+        holiday_date: date
+        holiday_name: varchar
+        nation: varchar
+    columns:
+      - name: holiday_date
+        description: The date the holiday falls on that year.
+        tests:
+          - not_null
+      - name: nation
+        description: Which of the three nations observes this holiday on this date.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["england-and-wales", "scotland", "northern-ireland"]
+      - name: holiday_name
+        description: e.g. "Christmas Day", "Spring bank holiday".
+        tests:
+          - not_null

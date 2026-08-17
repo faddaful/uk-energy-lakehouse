@@ -1,0 +1,102 @@
+# Tests for the gold dimensions. Filename: _dimensions.yml, sits next to
+# the four dimension .sql files in models/gold/dimensions/.
+
+version: 2
+
+models:
+  - name: dim_date
+    description: >
+      One row per calendar day, 2023-01-01 through 400 days past today.
+      Carries the correct settlement-period count for every day, INCLUDING
+      the two clock-change days a year (46 short, 50 long -- see the
+      model's own comment for why "49 or 50" is wrong). Never join to
+      this table to get a real timestamp for a settlement period; use
+      {{ doc("settlement_period_start_utc") }} on fct_settlement_period
+      instead.
+    columns:
+      - name: date_key
+        description: Surrogate key, hashed from date_day. Join target for every fact's date_key.
+        tests: [not_null, unique]
+      - name: date_day
+        description: The natural key -- an actual calendar date.
+        tests: [not_null, unique]
+      - name: settlement_periods_in_day
+        description: 46 on the short clock-change day, 50 on the long one, 48 otherwise.
+        tests:
+          - accepted_values:
+              arguments:
+                values: [46, 48, 50]
+      - name: is_working_day
+        description: Excludes weekends and England/Wales bank holidays only.
+        tests:
+          - not_null
+
+  - name: dim_settlement_period
+    description: >
+      Static 50-row dimension, one row per settlement period number
+      (1-50). Periods 49-50 exist here every day but only ever appear in
+      a fact table on the long clock-change day; see
+      is_clock_change_only_period.
+    columns:
+      - name: settlement_period_key
+        description: Surrogate key, hashed from settlement_period. Join target for every fact's settlement_period_key.
+        tests: [not_null, unique]
+      - name: settlement_period
+        description: "{{ doc('settlement_period') }}"
+        tests:
+          - not_null
+          - unique
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                max_value: 50
+                inclusive: true
+      - name: nominal_start_time_local
+        description: >
+          Convenience display value only, valid on 48-period days. Never
+          join this to get a real timestamp -- see the model comment.
+
+  - name: dim_region
+    description: >
+      The Carbon Intensity API's 14 DNO regions plus the England/
+      Scotland/Wales/GB aggregates, with a surrogate key added over
+      seed_region. See seeds/_seeds.yml for the seed's own documentation.
+    columns:
+      - name: region_key
+        description: Surrogate key, hashed from region_id. Join target for every fact's region_key.
+        tests: [not_null, unique]
+      - name: region_id
+        description: >
+          Natural key -- the Carbon Intensity API's region ID (1-18).
+          This pipeline only ever ingests region 8 (West Midlands) in
+          practice; see carbon_intensity.py's --region default.
+        tests:
+          - not_null
+          - unique
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                max_value: 18
+                inclusive: true
+
+  - name: dim_fuel_type
+    description: >
+      Elexon FUELHH fuel type codes, grouped into categories, with a
+      surrogate key added over seed_fuel_type. See seeds/_seeds.yml for
+      how the code list was verified against real bronze data.
+    columns:
+      - name: fuel_type_key
+        description: Surrogate key, hashed from fuel_type_code. Join target for every fact's fuel_type_key.
+        tests: [not_null, unique]
+      - name: fuel_type_code
+        description: Natural key -- Elexon's FUELHH code, e.g. CCGT, WIND, INTFR.
+        tests: [not_null, unique]
+      - name: is_renewable
+        description: >
+          Deliberately separate from is_interconnector, not combined into
+          one category -- an interconnector's carbon content depends on
+          the exporting country's mix, which this data cannot tell you.
+        tests: [not_null]
+      - name: is_interconnector
+        description: True for the ten INT* codes (IFA, BritNed, Viking Link, etc.).
+        tests: [not_null]
