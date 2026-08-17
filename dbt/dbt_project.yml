@@ -13,6 +13,41 @@ snapshot-paths: ["snapshots"]
 target-path: "target"
 clean-targets: ["target", "dbt_packages"]
 
+# dbt_project_evaluator needs this on DuckDB (and Databricks/Spark/
+# Redshift/ClickHouse/Fabric): without it, its macros resolve to dbt's
+# own no-op defaults instead of the package's real implementations, and
+# the audit models build empty rather than erroring -- worth knowing,
+# since that failure mode looks like "a clean project" instead of "a
+# missing config line".
+dispatch:
+  - macro_namespace: dbt
+    search_order: ["dbt_project_evaluator", "dbt"]
+
+# dbt_project_evaluator's own naming/structure checks assume a project
+# laid out as staging -> intermediate -> marts. This one is
+# staging -> silver -> gold (dimensions/facts/marts), so every layer is
+# mapped explicitly below rather than left on the package's defaults,
+# which would otherwise flag every model in the project as being in the
+# wrong folder for a layer this project was never trying to have.
+vars:
+  dbt_project_evaluator:
+    model_types: ["staging", "silver", "dimensions", "facts", "marts"]
+    staging_folder_name: "staging"
+    staging_prefixes: ["stg_"]
+    silver_folder_name: "silver"
+    # Matches both this project's real prefixes: silver__ (system_prices,
+    # generation_by_fuel, and the two revision models) and the one
+    # inconsistent single-underscore outlier, silver_regional_intensity
+    # -- itself a real naming-consistency finding, not something to
+    # paper over by only matching the double-underscore form.
+    silver_prefixes: ["silver_"]
+    dimensions_folder_name: "dimensions"
+    dimensions_prefixes: ["dim_"]
+    facts_folder_name: "facts"
+    facts_prefixes: ["fct_"]
+    marts_folder_name: "marts"
+    marts_prefixes: ["mart_"]
+
 models:
   lakehouse:
     staging:
@@ -22,4 +57,46 @@ models:
       # Tables: computed once per dbt build, fast to query.
       +materialized: table
     gold:
+      # Tables, materialised inside the same DuckDB file as everything
+      # else -- gold is derived and cheap to rebuild, so there is no
+      # reason to write it back out to ADLS the way bronze is. Getting it
+      # to Streamlit/Power BI is a separate export step (a Dagster asset
+      # reading these tables, Phase 3's next piece), not a materialisation
+      # choice here.
+      #
+      # +schema: gold puts these in their own schema (main_gold in the
+      # catalog, since profiles.yml never sets an explicit target schema
+      # and dbt's default naming appends the custom schema to it).
+      # staging/silver deliberately stay unscoped in "main", where Phase
+      # 1/2 already built them -- rescoping them now would just orphan
+      # those tables for no benefit. gold is new as of this step, so this
+      # is the natural point to start separating layers, and it gives the
+      # future export asset one schema to read every mart from.
       +materialized: table
+      +schema: gold
+      dimensions:
+        +tags: ["gold", "dimension"]
+      facts:
+        +tags: ["gold", "fact"]
+      marts:
+        +tags: ["gold", "mart"]
+
+seeds:
+  lakehouse:
+    # main_seeds in the catalog, same reasoning as gold's +schema above.
+    +schema: seeds
+    # Column types for dbt_project_evaluator_exceptions (dbt/seeds/
+    # dbt_project_evaluator_exceptions.csv) set here, not in seeds/
+    # _seeds.yml -- see the comment there for why a property-file entry
+    # for this specific seed name doesn't parse at all.
+    dbt_project_evaluator_exceptions:
+      +column_types:
+        fct_name: varchar
+        column_name: varchar
+        id_to_exclude: varchar
+        comment: varchar
+  # The package ships its own blank seed of the same name; ours (above)
+  # replaces it with real, documented exceptions -- see that file.
+  dbt_project_evaluator:
+    dbt_project_evaluator_exceptions:
+      +enabled: false

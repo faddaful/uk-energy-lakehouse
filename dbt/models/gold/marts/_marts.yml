@@ -1,0 +1,59 @@
+# Tests for the gold marts. Filename: _marts.yml, sits next to the three
+# mart .sql files in models/gold/marts/.
+
+version: 2
+
+models:
+  - name: mart_daily_summary
+    description: >
+      One row per calendar day: price, generation mix, and carbon
+      intensity, shaped for a dashboard's daily overview.
+      is_price_complete lets the dashboard grey out a day that is still
+      partial rather than plotting it as final.
+    columns:
+      - name: date_key
+        description: Foreign key to dim_date.date_key -- one row per day, so also unique here.
+        tests: [not_null, unique]
+      - name: date_day
+        description: The calendar date this row summarises.
+        tests: [not_null, unique]
+      - name: renewable_share_pct
+        description: >
+          Renewable MWh as a share of total generation MWh for the day.
+          Inherits the same net-mix caveat as fct_generation.share_of_mix_pct.
+
+  - name: mart_best_hours_today
+    description: >
+      The next 24 hours for the home region (West Midlands, region_id 8),
+      ranked by forecast carbon intensity and, where a real settled price
+      exists, by price. Rebuilt fresh on every dbt run -- see
+      generated_at.
+    columns:
+      - name: half_hour_start_utc
+        description: Start of the half hour this row ranks, UTC.
+        tests: [not_null, unique]
+      - name: greenness_rank
+        description: 1 = lowest forecast carbon intensity in the next 24 hours.
+        tests: [not_null]
+      - name: generated_at
+        description: >
+          When this mart was last built. Not decorative -- the Streamlit
+          app should show it next to every figure this mart produces, so
+          staleness is visible rather than assumed away.
+        tests: [not_null]
+
+  - name: mart_revision_summary
+    description: >
+      One row per settlement month: how often Elexon's published system
+      prices changed after first publication, and by how much.
+      pct_periods_revised is the headline "how often are the published
+      numbers wrong" figure. See the model comment for why this covers
+      price revisions only, not generation revisions.
+    columns:
+      - name: settlement_month
+        description: First day of the calendar month this row summarises.
+        tests: [not_null, unique]
+      - name: pct_periods_revised
+        description: >
+          revision_count as a percentage of total_periods for the month.
+          Expected to be small most months -- see the model comment.

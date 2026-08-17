@@ -1,0 +1,216 @@
+# Tests for the gold facts. Filename: _facts.yml, sits next to the three
+# fact .sql files in models/gold/facts/.
+
+version: 2
+
+models:
+  - name: fct_settlement_period
+    description: >
+      One row per settlement_date + settlement_period, built on
+      silver__system_prices. settlement_period_start_utc is Elexon's own
+      UTC timestamp, not derived from period-number arithmetic -- see
+      the model comment and {{ doc("settlement_period_start_utc") }}.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - settlement_date
+              - settlement_period
+    columns:
+      - name: settlement_period_fact_key
+        description: Surrogate key, hashed from settlement_date + settlement_period.
+        tests: [not_null, unique]
+      - name: date_key
+        description: Foreign key to dim_date.date_key.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: settlement_period_key
+        description: Foreign key to dim_settlement_period.settlement_period_key.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_settlement_period')
+                field: settlement_period_key
+      - name: settlement_period
+        description: "{{ doc('settlement_period') }}"
+        tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                max_value: 50
+                inclusive: true
+      - name: settlement_period_start_utc
+        description: "{{ doc('settlement_period_start_utc') }}"
+        tests:
+          - not_null
+
+  - name: fct_generation
+    description: >
+      One row per settlement_date + settlement_period + fuel_type, with
+      each fuel's share of the half-hourly transmission-metered mix.
+      Excludes embedded generation such as distribution-connected solar,
+      which FUELHH does not observe (see README). share_of_mix_pct
+      includes interconnectors in its denominator -- see the model
+      comment for the reasoning and the empirical range this produces.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - settlement_date
+              - settlement_period
+              - fuel_type_code
+    columns:
+      - name: generation_fact_key
+        description: Surrogate key, hashed from settlement_date + settlement_period + fuel_type_code.
+        tests: [not_null, unique]
+      - name: date_key
+        description: Foreign key to dim_date.date_key.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: settlement_period_key
+        description: Foreign key to dim_settlement_period.settlement_period_key.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_settlement_period')
+                field: settlement_period_key
+      - name: fuel_type_key
+        description: Foreign key to dim_fuel_type.fuel_type_key.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_fuel_type')
+                field: fuel_type_key
+      - name: settlement_period
+        description: "{{ doc('settlement_period') }}"
+        tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                max_value: 50
+                inclusive: true
+      - name: share_of_mix_pct
+        description: "{{ doc('share_of_mix_pct') }}"
+
+  - name: fct_regional_intensity
+    description: >
+      One row per half hour + region, built on silver_regional_intensity.
+      Forecast only -- see intensity_actual_gco2_per_kwh's own
+      description for why it is always NULL, and the model comment for
+      why there is no mix-percentage breakdown here.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - half_hour_start_utc
+              - region_id
+    columns:
+      - name: regional_intensity_fact_key
+        description: Surrogate key, hashed from half_hour_start_utc + region_id.
+        tests: [not_null, unique]
+      - name: date_key
+        description: Foreign key to dim_date.date_key.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: region_key
+        description: Foreign key to dim_region.region_key.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_region')
+                field: region_key
+      - name: intensity_forecast_gco2_per_kwh
+        description: Forecast carbon intensity for the half hour, gCO2/kWh.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 1500
+      - name: intensity_actual_gco2_per_kwh
+        description: >
+          Always NULL: the Carbon Intensity API's regional endpoint is
+          forecast-only and has no actuals to report. Kept as a column
+          rather than dropped so a consumer querying gold directly can
+          see that for themselves, instead of assuming it exists and
+          silently getting no rows back from a filter on it.
+
+unit_tests:
+  - name: test_share_of_mix_handles_zero_total
+    description: >
+      A settlement period where every landed fuel_type has generation_mw
+      = 0 must produce a NULL share_of_mix_pct, not a divide-by-zero
+      error. This is the guard the model comment calls out; this test is
+      what actually proves it rather than just asserting it in prose.
+    model: fct_generation
+    overrides:
+      macros:
+        # fct_generation is incremental; a unit test has no {{ this }} to
+        # query for is_incremental()'s "has this table been built before"
+        # check, so dbt requires this to be set explicitly rather than
+        # guessed. false exercises the full-refresh branch (the given
+        # rows above are the entire input, not a trailing window of it),
+        # which is what both these fixtures represent.
+        is_incremental: false
+    given:
+      - input: ref('silver__generation_by_fuel')
+        rows:
+          - {settlement_date: "2026-01-15", settlement_period: 1, fuel_type: "WIND", generation_mw: 0, start_time: "2026-01-15 00:00:00", loaded_at: "2026-01-15 01:00:00"}
+      - input: ref('dim_date')
+        rows:
+          - {date_key: "date_abc", date_day: "2026-01-15"}
+      - input: ref('dim_settlement_period')
+        rows:
+          - {settlement_period_key: "sp_abc", settlement_period: 1}
+      - input: ref('dim_fuel_type')
+        rows:
+          - {fuel_type_key: "fuel_abc", fuel_type_code: "WIND"}
+    expect:
+      rows:
+        - {fuel_type_code: "WIND", generation_mw: 0, total_generation_mw: 0, share_of_mix_pct: null}
+
+  - name: test_share_of_mix_splits_two_fuels_correctly
+    description: >
+      Sanity check on the arithmetic itself, not just the zero-guard: two
+      fuel types in the same period should split 100% in proportion to
+      their generation_mw, and interconnectors count toward the
+      denominator (net-mix semantics -- see the model comment).
+    model: fct_generation
+    overrides:
+      macros:
+        is_incremental: false
+    given:
+      - input: ref('silver__generation_by_fuel')
+        rows:
+          - {settlement_date: "2026-01-15", settlement_period: 1, fuel_type: "WIND", generation_mw: 300, start_time: "2026-01-15 00:00:00", loaded_at: "2026-01-15 01:00:00"}
+          - {settlement_date: "2026-01-15", settlement_period: 1, fuel_type: "CCGT", generation_mw: 100, start_time: "2026-01-15 00:00:00", loaded_at: "2026-01-15 01:00:00"}
+      - input: ref('dim_date')
+        rows:
+          - {date_key: "date_abc", date_day: "2026-01-15"}
+      - input: ref('dim_settlement_period')
+        rows:
+          - {settlement_period_key: "sp_abc", settlement_period: 1}
+      - input: ref('dim_fuel_type')
+        rows:
+          - {fuel_type_key: "fuel_wind", fuel_type_code: "WIND"}
+          - {fuel_type_key: "fuel_ccgt", fuel_type_code: "CCGT"}
+    expect:
+      rows:
+        - {fuel_type_code: "WIND", total_generation_mw: 400, share_of_mix_pct: 75.0}
+        - {fuel_type_code: "CCGT", total_generation_mw: 400, share_of_mix_pct: 25.0}

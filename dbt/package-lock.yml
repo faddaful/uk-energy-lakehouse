@@ -5,7 +5,10 @@ packages:
   - name: dbt_expectations
     package: metaplane/dbt_expectations
     version: 0.10.10
+  - name: dbt_project_evaluator
+    package: dbt-labs/dbt_project_evaluator
+    version: 1.3.4
   - name: dbt_date
     package: godatadriven/dbt_date
-    version: 0.19.0
-sha1_hash: fc92538df71598daba6bb9d78a34da3bf068e4fd
+    version: 0.20.0
+sha1_hash: cd9d55b13227508b0666e19180a907a6e92fad8d

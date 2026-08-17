@@ -229,6 +229,7 @@ journal.md
 .dagster_home
 dbt_packages/
 target/
+dbt/logs/
 infra/terraform/.terraform/
 infra/terraform/*.tfstate
 infra/terraform/*.tfstate.*

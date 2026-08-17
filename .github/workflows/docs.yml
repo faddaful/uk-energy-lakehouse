@@ -1,0 +1,86 @@
+# Publishes dbt's generated documentation site (lineage graph + column-
+# level catalog) to GitHub Pages. Builds against the same committed
+# fixtures as CI's build job, deliberately: publishing docs never needs
+# Azure credentials, for the same reason ci.yml's build job doesn't --
+# see that file's own comments. `dbt run` happens before `docs generate`
+# on purpose too: docs generate alone only produces the lineage graph
+# with no column-level detail, because there is no warehouse to read a
+# catalog from yet.
+
+name: Publish dbt docs
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      TARGET: local
+      LOCAL_DATA_ROOT: tests/fixtures
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: dbt deps
+        working-directory: dbt
+        run: uv run dbt deps
+
+      - name: Create data directory for DuckDB
+        run: mkdir -p data
+
+      # seed + run (not build): tests aren't needed to produce docs, and
+      # skipping them keeps this workflow from being a second place a
+      # data-quality failure can block a docs publish. CI's own build job
+      # is still what gates merges.
+      - name: dbt seed (fixtures)
+        working-directory: dbt
+        run: |
+          uv run dbt seed --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel}'
+
+      - name: dbt run (fixtures)
+        working-directory: dbt
+        run: |
+          uv run dbt run --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel}'
+
+      - name: dbt docs generate
+        working-directory: dbt
+        run: uv run dbt docs generate --static
+
+      - name: Stage site
+        run: |
+          mkdir -p site
+          cp dbt/target/static_index.html site/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
