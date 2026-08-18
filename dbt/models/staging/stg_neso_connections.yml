@@ -1,0 +1,62 @@
+# Tests for the staging model. Filename: stg_neso_connections.yml, sits
+# next to the .sql file in models/staging/.
+
+version: 2
+
+models:
+  - name: stg_neso_connections
+    description: >
+      Bronze NESO TEC register, typed and renamed, filtered to the most
+      recent as_of_date landing. Unlike the Elexon staging models, this
+      is not a pass-through of every past landing: bronze holds those,
+      but this model's whole job is to represent "the queue right now"
+      for dbt/snapshots/snapshot_connection_queue.sql to diff against.
+      See the model comment for why, and for what connections_key is.
+    columns:
+      - name: connections_key
+        description: >
+          Deterministic tiebreak key for (project_id, stage), see model
+          comment: NESO's own docs confirm that pair is not always
+          unique. This, not project_id + stage alone, is what the dbt
+          snapshot's unique_key is set to.
+        tests:
+          - not_null
+          - unique
+      - name: project_id
+        description: >
+          NESO's internal project identifier. Case-sensitive per NESO's
+          own field notes, though no real case collision has been seen
+          in this project's own data yet.
+        tests:
+          - not_null
+      - name: stage
+        description: >
+          Tranche number for a project with staged TEC (1-5 in the real
+          data seen so far). NULL for a single-stage project, and for
+          both rows of the "already built, adding new generation" two-row
+          pattern the model comment describes.
+      - name: project_status
+        description: Scoping, Awaiting Consents, Consents Approved, Under Construction/Commissioning, or Built.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - Scoping
+                  - Awaiting Consents
+                  - Consents Approved
+                  - Under Construction/Commissioning
+                  - Built
+      - name: cumulative_capacity_mw
+        description: Running total contracted TEC for this project after this tranche, MW.
+        tests:
+          - not_null
+      - name: mw_effective_from
+        description: >
+          Date this tranche's capacity takes (or took) effect. NULL for
+          roughly a sixth of rows in the real register: not every tranche
+          has a published effective date yet.
+      - name: as_of_date
+        description: The date this landing represents, always the single most recent one after the model's own filter.
+        tests:
+          - not_null

@@ -53,7 +53,7 @@ jobs:
       - name: dbt build (against fixtures)
         working-directory: dbt
         run: |
-          uv run dbt build --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel}'
+          uv run dbt build --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel, neso_connections_path: ../tests/fixtures/neso_connections}'
     env:
       TARGET: local
       LOCAL_DATA_ROOT: tests/fixtures

@@ -43,6 +43,12 @@ FUEL_CATEGORY_COLORS = {
     "Storage": "#eda100",
     "Other": "#e87ba4",
     "Renewable": "#008300",
+    # dim_technology's one category with no equivalent in the Elexon/CI
+    # taxonomies this palette was built for (Demand, Reactive
+    # Compensation, Substation: real queue entries, not a generation or
+    # storage technology). Same muted grey as EVENT_COLORS' "Normal":
+    # recedes on a chart the same way an unremarkable case should.
+    "Non-generation": "#c3c2b7",
 }
 
 # Status colours, reserved for exactly this: flagging a period as notable,
@@ -414,6 +420,100 @@ def render_price_events() -> None:
         )
 
 
+def render_connections_queue() -> None:
+    evolution = run_query("select * from main_gold.mart_queue_evolution order by as_of_month")
+    if evolution.empty:
+        st.info(
+            "No connections queue data yet. Run `uv run python -m lakehouse.extractors.neso_connections` "
+            "and rebuild gold (`make build-local`) to populate it."
+        )
+        return
+
+    latest = evolution.iloc[-1]
+    st.write(
+        "NESO's Transmission Entry Capacity register: every project with a contract to connect "
+        "to the GB transmission system, and how the queue itself is moving. NESO only publishes "
+        "the current snapshot, twice a week; this dashboard is what turns that into history."
+    )
+    st.caption(f"As of {latest['as_of_month'].strftime('%B %Y')}, {len(evolution)} monthly snapshot(s) of history so far.")
+
+    cols = st.columns(3)
+    cols[0].metric("Projects in queue", f"{latest['projects_in_queue']:,.0f}")
+    cols[1].metric("Total contracted capacity", f"{latest['total_capacity_mw'] / 1000:.1f} GW")
+    if pd.notna(latest["renewable_share_of_generation_pct"]):
+        cols[2].metric("Renewable share of generation", f"{latest['renewable_share_of_generation_pct']:.0f}%")
+    else:
+        cols[2].metric("Renewable share of generation", "—")
+
+    if len(evolution) > 1:
+        fig = px.area(
+            evolution,
+            x="as_of_month",
+            y="total_capacity_mw",
+            labels={"as_of_month": "", "total_capacity_mw": "MW"},
+        )
+        fig.update_traces(line_color=FUEL_CATEGORY_COLORS["Renewable"])
+        st.plotly_chart(fig, width="stretch")
+    else:
+        st.caption(
+            "Queue size over time needs at least two monthly snapshots to plot; there is "
+            "only one so far. NESO republishes twice a week, so this fills in from here."
+        )
+
+    st.write("What's actually in the queue right now, by technology:")
+    mix = run_query("""
+        select t.technology_category, sum(f.cumulative_capacity_mw) as capacity_mw
+        from main_gold.fct_connection_queue f
+        join main_gold.dim_technology t using (technology_key)
+        where f.as_of_month = (select max(as_of_month) from main_gold.fct_connection_queue)
+        group by 1
+        order by 2 desc
+    """)
+    fig = px.bar(
+        mix,
+        x="capacity_mw",
+        y="technology_category",
+        orientation="h",
+        color="technology_category",
+        color_discrete_map=FUEL_CATEGORY_COLORS,
+        labels={"capacity_mw": "Contracted capacity (MW)", "technology_category": ""},
+    )
+    fig.update_layout(showlegend=False, yaxis={"categoryorder": "total ascending"})
+    st.plotly_chart(fig, width="stretch")
+
+    avg_year = run_query("""
+        select avg(year(mw_effective_from)) as avg_year
+        from main_gold.fct_connection_queue
+        where as_of_month = (select max(as_of_month) from main_gold.fct_connection_queue)
+          and mw_effective_from is not null
+    """)["avg_year"].iloc[0]
+    if pd.notna(avg_year):
+        st.caption(
+            f"Average published connection year across the current queue: **{avg_year:.0f}**. "
+            "NULL for any project with no published effective date yet, excluded here rather than "
+            "treated as zero."
+        )
+
+    st.write("Movement since the previous monthly snapshot:")
+    if latest["projects_with_known_slippage"] == 0:
+        st.caption(
+            "No month-on-month comparison possible yet: connection_date_slippage_days only "
+            "exists for a project seen in two consecutive monthly snapshots, and there is only "
+            "one so far. Check back after the next snapshot."
+        )
+    else:
+        move_cols = st.columns(3)
+        move_cols[0].metric("Projects with a known move", f"{latest['projects_with_known_slippage']:,.0f}")
+        move_cols[1].metric("Delayed", f"{latest['projects_delayed']:,.0f}")
+        move_cols[2].metric("Brought forward", f"{latest['projects_accelerated']:,.0f}")
+        if pd.notna(latest["avg_connection_date_slippage_days"]):
+            direction = "later" if latest["avg_connection_date_slippage_days"] > 0 else "earlier"
+            st.caption(
+                f"Average move: {abs(latest['avg_connection_date_slippage_days']):.0f} days {direction} "
+                "than the date published the previous month."
+            )
+
+
 def render_tariff_placeholder() -> None:
     st.info(
         "Not built yet. A later phase joins your own half-hourly consumption "
@@ -437,6 +537,7 @@ def main() -> None:
             f"Best hours today · {HOME_REGION_NAME}",
             "GB generation mix",
             "Recent price events",
+            "Connections queue",
             "Tariff comparison",
         ]
     )
@@ -449,6 +550,8 @@ def main() -> None:
     with tabs[3]:
         render_price_events()
     with tabs[4]:
+        render_connections_queue()
+    with tabs[5]:
         render_tariff_placeholder()
 
 

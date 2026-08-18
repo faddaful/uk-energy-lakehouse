@@ -42,6 +42,32 @@ models:
           staleness is visible rather than assumed away.
         tests: [not_null]
 
+  - name: mart_queue_evolution
+    description: >
+      One row per calendar month: connections-queue size, capacity mix
+      by technology category, and how far NESO's own published
+      connection dates moved since the previous month. See the model
+      comment for exactly what connection_date_slippage_days measures
+      and why a project's first observed month never has one.
+    columns:
+      - name: as_of_month
+        description: First day of the calendar month this row summarises.
+        tests: [not_null, unique]
+      - name: total_capacity_mw
+        description: Sum of cumulative_capacity_mw across every project tranche in the queue that month.
+        tests: [not_null]
+      - name: renewable_share_of_generation_pct
+        description: >
+          renewable_capacity_mw as a percentage of generation_capacity_mw
+          (excludes Interconnector/Demand/Reactive Compensation/
+          Substation, see seed_neso_technology's is_generation).
+      - name: avg_connection_date_slippage_days
+        description: >
+          Positive means published connection dates moved later on
+          average that month (delay); negative means earlier. NULL until
+          a second monthly landing exists to compare against, see the
+          model comment.
+
   - name: mart_revision_summary
     description: >
       One row per settlement month: how often Elexon's published system

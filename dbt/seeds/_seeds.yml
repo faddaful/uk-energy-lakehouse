@@ -160,6 +160,46 @@ seeds:
           - not_null
           - unique
 
+  - name: seed_neso_technology
+    description: >
+      NESO TEC register Plant Type technologies, grouped into categories,
+      reusing the same category vocabulary as seed_fuel_type and
+      seed_ci_fuel_type (Fossil, Low carbon, Renewable, Storage, Other,
+      Interconnector) plus one this seed adds, Non-generation, for queue
+      entries that are not a generation or storage technology at all
+      (Demand connections, Reactive Compensation, Substation works). The
+      23 rows here are every individual technology token this project's
+      own real register data actually contains (2,198 rows, 2026-08-18),
+      not a list typed in from documentation: NESO's Plant Type column is
+      semicolon-delimited and multi-value ("Energy Storage System;Wind
+      Onshore"), see dim_technology.sql for why gold classifies each
+      project by only the first-listed technology rather than exploding
+      every combination.
+    config:
+      column_types:
+        technology: varchar
+        technology_category: varchar
+        is_renewable: boolean
+        is_generation: boolean
+        sort_order: integer
+    columns:
+      - name: technology
+        description: Natural key, one of NESO's individual Plant Type tokens, e.g. "Wind Onshore", "Energy Storage System".
+        tests:
+          - not_null
+          - unique
+      - name: is_generation
+        description: >
+          False for Interconnector, Demand, Reactive Compensation and
+          Substation: real queue entries, but not a generation or storage
+          technology, so excluded from any generation-capacity total.
+        tests:
+          - not_null
+      - name: sort_order
+        tests:
+          - not_null
+          - unique
+
   - name: uk_bank_holidays
     description: >
       England-and-Wales, Scotland and Northern Ireland bank holidays,

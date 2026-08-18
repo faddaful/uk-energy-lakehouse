@@ -1,0 +1,31 @@
+# Tests for the snapshot. Filename: _snapshots.yml, sits next to
+# snapshot_connection_queue.sql in snapshots/.
+
+version: 2
+
+snapshots:
+  - name: snapshot_connection_queue
+    description: >
+      Row-level SCD Type 2 history of the TEC connections register, one
+      version per connections_key per real change (see the model comment
+      for what "real change" means here and why strategy='check'
+      instead of 'timestamp'). This is what actually answers "what did
+      the queue look like in January vs now": the staging model this
+      snapshots only ever shows the latest landing, this table is where
+      every past state lives.
+    columns:
+      - name: connections_key
+        description: Foreign key to stg_neso_connections.connections_key, not unique here since a row gets a new version each time it changes.
+        tests:
+          - not_null
+      - name: dbt_valid_from
+        description: When dbt first observed this version of the row.
+        tests:
+          - not_null
+      - name: dbt_valid_to
+        description: When this version was superseded by a later one. NULL means this is the current version.
+      - name: dbt_scd_id
+        description: dbt's own surrogate key for one version of one row. Unique per row in this table.
+        tests:
+          - not_null
+          - unique

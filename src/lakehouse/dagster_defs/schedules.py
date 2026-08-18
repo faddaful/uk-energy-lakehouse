@@ -60,3 +60,20 @@ bronze_elexon_generation_by_fuel_schedule = ScheduleDefinition(
     cron_schedule="30 3 * * 0",
     execution_timezone="UTC",
 )
+
+bronze_neso_connections_job = define_asset_job(
+    name="bronze_neso_connections_job",
+    selection=AssetSelection.assets("bronze_neso_connections"),
+    description="Fetch and land the current NESO TEC connections register.",
+)
+
+# NESO republishes the TEC register twice a week, Tuesdays and Fridays
+# (confirmed against the live data portal, not assumed from the plan this
+# follows). Landing on the same two days, a few hours after NESO's own
+# publish, is what actually catches every real change rather than a
+# monthly cadence that would silently miss most of them.
+bronze_neso_connections_schedule = ScheduleDefinition(
+    job=bronze_neso_connections_job,
+    cron_schedule="0 12 * * 2,5",
+    execution_timezone="UTC",
+)

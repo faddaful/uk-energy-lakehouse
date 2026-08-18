@@ -220,6 +220,63 @@ models:
                 min_value: 0
                 max_value: 100
 
+  - name: fct_connection_queue
+    description: >
+      Periodic snapshot fact: one row per project tranche
+      (connections_key) per as_of_month, built from
+      snapshot_connection_queue's row-level SCD history. See the model
+      comment for exactly what "the state as of month M" means and why
+      primary_technology, not the raw multi-value plant_type, is what
+      dim_technology joins on.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - connections_key
+              - as_of_month
+    columns:
+      - name: connection_queue_fact_key
+        description: Surrogate key, hashed from connections_key + as_of_month.
+        tests: [not_null, unique]
+      - name: as_of_month_date_key
+        description: Foreign key to dim_date.date_key, always the 1st of as_of_month.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: technology_key
+        description: >
+          Foreign key to dim_technology.technology_key. Left-joined, not
+          inner-joined, in the model on purpose: a future NESO Plant Type
+          token not yet in seed_neso_technology should surface as a real,
+          visible NULL here, not silently drop the whole project row.
+          not_null is severity: warn, not the usual hard failure: every
+          technology seen in real register data so far does resolve, but
+          a genuinely new token from NESO should show up as a warning on
+          the next scheduled build, not break it outright.
+        tests:
+          - not_null:
+              config:
+                severity: warn
+          - relationships:
+              arguments:
+                to: ref('dim_technology')
+                field: technology_key
+      - name: as_of_month
+        description: First day of the calendar month this row represents the queue as of.
+        tests: [not_null]
+      - name: cumulative_capacity_mw
+        description: Running total contracted TEC for this project as of this month, MW.
+        tests: [not_null]
+      - name: version_valid_to
+        description: >
+          dbt_valid_to from the underlying snapshot row. NULL means this
+          project tranche was still an open, current queue entry as of
+          as_of_month; a real value means it had already been superseded
+          or removed by month-end, and this row is its last known state.
+
 unit_tests:
   - name: test_share_of_mix_handles_zero_total
     description: >

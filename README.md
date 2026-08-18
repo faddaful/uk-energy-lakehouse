@@ -12,6 +12,8 @@ Phase 2 is complete. Elexon ingestion and revision resolution are done for both 
 
 Phase 3 is complete: a dimensional gold layer (four dimensions, three incremental facts, three dashboard-shaped marts), a personal Streamlit dashboard reading straight from it, and published dbt docs. Power BI was dropped from the plan in favour of Streamlit alone. One dashboard, kept genuinely useful, beats two built to tick a box. See [The gold layer](#the-gold-layer) below for the gold-layer design decisions and [Dashboard](#dashboard) for how the app is run and reached from a phone.
 
+Phase 4, first piece, is complete: the connections queue observatory. NESO's TEC register only ever publishes its current state, twice a week, with no public history; this project now lands every publish and turns it into real row-level history with a dbt snapshot, this project's first. See [The connections queue observatory](#the-connections-queue-observatory) below for what the real data actually looks like and the design decisions that came out of checking it directly rather than assuming the plan's first draft.
+
 ## Architecture
 
 ![Architecture](images/uk-energy-lakehouse-architecture-current.png)
@@ -33,10 +35,11 @@ Data flows from open APIs through Python extractors into a bronze, silver, gold 
 - Published dbt docs: a public lineage graph and column-level catalog, built from committed fixtures (no Azure credentials needed) and deployed to GitHub Pages on every push to `main`.
 - Self-audited with `dbt_project_evaluator`: DAG shape, naming, folder structure, and test/documentation coverage, configured for this project's actual staging/silver/gold layering rather than left on the package's default assumptions. Every finding is either fixed, or documented as a deliberate exception with real reasoning, or left visibly open as a genuine gap (see [Auditing the project](#auditing-the-project) below).
 - A personal Streamlit dashboard reading straight from gold, startable on demand from Dagster, reachable from a phone over Tailscale (see [Dashboard](#dashboard) below).
+- A connections queue observatory: a NESO TEC register extractor, landed twice weekly and turned into real row-level history by this project's first dbt snapshot, a periodic-snapshot gold fact and mart, and a Streamlit tab (queue size over time, technology mix, average connection year, month-on-month movement). See [The connections queue observatory](#the-connections-queue-observatory) below.
 
 ## Tech stack
 
-Python, Dagster (orchestration), Delta Lake with DuckDB's `delta` extension (storage and query), dbt with DuckDB (transformation, gold-layer dimensional modelling, and testing), Streamlit with Plotly (dashboard), Azure ADLS Gen2 with Terraform (cloud storage and infrastructure as code), GitHub Actions (CI and dbt docs publishing), uv (packaging and environments).
+Python, Dagster (orchestration), Delta Lake with DuckDB's `delta` extension (storage and query), dbt with DuckDB (transformation, gold-layer dimensional modelling, snapshots, and testing), Streamlit with Plotly (dashboard), Azure ADLS Gen2 with Terraform (cloud storage and infrastructure as code), GitHub Actions (CI and dbt docs publishing), uv (packaging and environments).
 
 ## Data sources
 
@@ -44,13 +47,13 @@ All free and public.
 
 - Carbon Intensity API: regional generation mix and carbon intensity (forecast, gCO2/kWh, and the API's own qualitative band), half-hourly with a 48-hour forecast. In use now.
 - Elexon Insights (BMRS): wholesale prices, generation by fuel type, balancing. Public, no key required. Phase 2.
-- NESO Data Portal: demand forecasts, interconnector flows, and the transmission connections queue. Later phases.
+- NESO Data Portal: the Transmission Entry Capacity (TEC) connections register. In use now (Phase 4). Demand forecasts and interconnector flows remain later phases.
 
 ## Repository layout
 
 ```
 src/lakehouse/        Python: extractors, io/storage (local vs Azure), Dagster definitions, alerts
-dbt/                  dbt: staging, silver, gold (dimensions/facts/marts), seeds, tests, macros
+dbt/                  dbt: staging, silver, snapshots, gold (dimensions/facts/marts), seeds, tests, macros
 tests/                pytest unit tests and CI fixtures (Delta tables)
 .github/workflows/    CI pipeline, dbt docs publish
 infra/terraform/      Resource group, ADLS Gen2 storage account, container, RBAC role assignment
@@ -87,9 +90,25 @@ Five dimensions, four incremental facts, three marts, all in `dbt/models/gold/`,
 
 Every gold model and non-obvious column has a description; run `cd dbt && uv run dbt docs generate --static` to build the lineage graph and column catalog locally, or browse the published version at **[faddaful.github.io/uk-energy-lakehouse](https://faddaful.github.io/uk-energy-lakehouse/)**, built from committed fixtures on every push to `main` (`.github/workflows/docs.yml`), no Azure credentials needed, same principle as CI's own build job.
 
+## The connections queue observatory
+
+The plan behind this piece assumed NESO's TEC register updates "roughly monthly." Checked directly against the live [NESO data portal](https://www.neso.energy/data-portal/transmission-entry-capacity-tec-register) before writing any code, that turned out to be wrong: it republishes twice a week, Tuesdays and Fridays, and the file is small (~440KB), so `bronze_neso_connections` lands on that real cadence rather than the plan's original guess. See `neso_connections.py`'s module docstring for the rest of what checking the real CSV surfaced before this was built, not assumed from the plan:
+
+- **The download URL is not stable.** NESO's CKAN resource embeds the publish date in the filename itself (`tec-register-18-august-2026.csv`), and it changes on every publish. `resolve_csv_url()` looks it up fresh from the CKAN API (`package_show`) on every run instead of hardcoding a URL.
+- **Row grain is per project *tranche*, not per project.** A project with staged capacity gets one row per `Stage` (1-5); `Project ID` alone is not unique (2,057 unique IDs over 2,198 rows in the register as landed on 2026-08-18).
+- **`(Project ID, Stage)` still is not a clean key.** NESO's own field notes explain why: an already-built project adding new generation gets a second row with the same `Project ID` and a blank `Stage`, until the addition is itself built and the two rows merge back into one. `stg_neso_connections.sql`'s `connections_key` breaks that tie deterministically, sorting on fields that describe what the row is rather than where it sat in the CSV, and this is what the dbt snapshot below actually snapshots on. `tests/test_connections_queue_dedup.py` exercises the same idiom directly against a synthetic version of this exact scenario.
+- **Bronze keeps NESO's own column names verbatim, spaces, slashes and parentheses included** (`"MW Increase / Decrease"`, `"Cumulative Total Capacity (MW)"`). Confirmed against a real write and a real `delta_scan()` read before trusting it, not assumed: Delta and DuckDB both handle it fine. Staging is where they get renamed.
+- **Stage and Gate can land entirely NULL in a single fetch.** Both are mostly-NULL columns in the real register (about 88% and 63% of rows), and a small CI fixture built from real data hit this on the first try: an all-NULL pandas column has no non-null value for pyarrow to infer a type from, so it lands as Arrow's void type, which DuckDB's `delta_scan()` rejects outright. Same failure mode, same fix, as `carbon_intensity.py`'s `intensity_actual` column (see [Local vs Azure storage](#local-vs-azure-storage) below): force a concrete `float64` cast in `fetch_connections_data()` rather than leave it to inference.
+
+**This is the first thing in this project to use a real dbt snapshot** (`dbt/snapshots/snapshot_connection_queue.sql`), not the recompute-from-append-only-bronze window function `silver__price_revisions.sql` uses. The TEC register is a different shape of problem: ~2,200 rows where any of them can change between landings, and rows genuinely appearing and disappearing as projects join and leave the queue, which is exactly the row-level insert/update/expire pattern dbt snapshot's SCD Type 2 machinery exists for. `strategy='check'` against an explicit column list, not `'all'`: NESO gives no reliable per-row "this changed at" timestamp to sort on, and `check_cols='all'` would have made the extractor's own `as_of_date`/`loaded_at` bookkeeping columns look like a change on every single run, since they change on every single run. Verified by actually re-running `dbt snapshot` twice in a row against the same landing before trusting it: 2,198 rows, still 2,198 open rows, not 4,396. `invalidate_hard_deletes=True` is also on, deliberately: without it, a project that genuinely leaves the register would just sit in the snapshot marked "current" forever, silently stale.
+
+Gold turns that SCD history into a periodic snapshot fact, `fct_connection_queue` (one row per project tranche per `as_of_month`, "whichever snapshot version was open through the end of that month"), and a mart, `mart_queue_evolution` (queue size, capacity mix by technology, and `connection_date_slippage_days`: how far NESO's own published `MW Effective From` moved for a project between one monthly snapshot and the next). `primary_technology` (the first-listed token of NESO's own semicolon-delimited, multi-value `Plant Type` column) feeds a new dimension, `dim_technology`, over a new seed, `seed_neso_technology`: NESO's own field notes admit "capacity across stages and technology types is currently presented in aggregate," so attributing a row's whole MW to every listed technology would double-count it in any mix total, and attributing it to only the first-listed one is the honest choice given what the source actually provides.
+
+The Streamlit tab (see [Dashboard](#dashboard) below) is deliberately built to look sensible on one month of history and get richer on its own: queue size over time shows a real chart once there are two monthly snapshots to plot and a plain explanation until then, and month-on-month movement does the same. Nothing needs backfilling by hand; it fills in from the next Tuesday or Friday landing onward.
+
 ## Dashboard
 
-`apps/streamlit/dashboard.py` has five tabs: how green your home region's electricity is right now and over the visible forecast (the API's own index band, plus the true regional fuel mix behind it, from `fct_regional_generation_mix`), the greenest (and, where a settled price exists, cheapest) hours in the next 24 hours from `mart_best_hours_today`, GB's whole-transmission-system generation mix with a date/period drill-down, recent price events (negative prices and large half-hour-on-half-hour swings) with an event-type filter, and a placeholder for the Phase 5 tariff comparison. It opens a read-only connection straight to the DuckDB file dbt already builds, no export step, no separate data path to keep in sync.
+`apps/streamlit/dashboard.py` has six tabs: how green your home region's electricity is right now and over the visible forecast (the API's own index band, plus the true regional fuel mix behind it, from `fct_regional_generation_mix`), the greenest (and, where a settled price exists, cheapest) hours in the next 24 hours from `mart_best_hours_today`, GB's whole-transmission-system generation mix with a date/period drill-down, recent price events (negative prices and large half-hour-on-half-hour swings) with an event-type filter, the connections queue observatory (queue size over time, technology mix, average connection year, month-on-month movement, see [The connections queue observatory](#the-connections-queue-observatory) above), and a placeholder for the Phase 5 tariff comparison. It opens a read-only connection straight to the DuckDB file dbt already builds, no export step, no separate data path to keep in sync.
 
 Run it with `make streamlit` (or `uv run streamlit run apps/streamlit/dashboard.py --server.address 0.0.0.0`), then open it from your phone over Tailscale, the same way as any other self-hosted dashboard: `http://<tailscale-ip>:8501`. It can also be started on demand from the Dagster UI: `streamlit_dashboard_job` launches it as a detached background process and no-ops if it's already running.
 
@@ -175,6 +194,7 @@ uv sync
 uv run python -m lakehouse.extractors.carbon_intensity --date 2026-08-06
 uv run python -m lakehouse.extractors.elexon_system_prices --start-date 2026-05-18 --end-date 2026-08-15
 uv run python -m lakehouse.extractors.elexon_generation_by_fuel --start-date 2026-05-18 --end-date 2026-08-15
+uv run python -m lakehouse.extractors.neso_connections
 
 # run the orchestrator UI (persists run history to .dagster_home/)
 make dev
@@ -198,7 +218,7 @@ If `uv run python -m lakehouse...` fails with `ModuleNotFoundError: No module na
 
 - Phase 2 remaining: a `make teardown` target to `terraform destroy` on demand; and once a real Elexon revision has actually been captured in the wild (not just the synthetic fixture scenario), a small script showing the same settlement period at two Delta table versions with different prices, using Delta's time travel, the actual "my pipeline noticed the official price changed" demo.
 - Phase 3 remaining: the one open finding from [Auditing the project](#auditing-the-project): turning `macros/bronze.sql` into real dbt `source()` definitions so bronze actually appears in the DAG and the published lineage graph, instead of being a literal `delta_scan()` path string dbt can't see. (Power BI was dropped from the plan in favour of Streamlit alone; see [Status](#status).)
-- Phase 4 and uniqueness layer: NESO demand forecast accuracy, a connections-queue observatory built on the public TEC register, published analysis of price revisions, a small public data product, and a personal dynamic-tariff cost comparison.
+- Phase 4 remaining: the connections queue observatory itself is done (see [The connections queue observatory](#the-connections-queue-observatory) above); still open are NESO demand forecast accuracy, publishing `mart_revision_summary` as an automated monthly report, a small public data product built off gold, and a personal dynamic-tariff cost comparison.
 
 ## Notes
 
