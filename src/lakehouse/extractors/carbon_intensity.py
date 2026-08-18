@@ -132,6 +132,20 @@ def save_carbon_intensity_data(df: pd.DataFrame, date: str) -> None:
     fetch/grouping bug here instead of silently landing a date's data
     under the wrong partition.
 
+    schema_mode="merge" is what makes this additive-safe: a df with a
+    column the table doesn't have yet (e.g. intensity_index, added after
+    this table already had weeks of history) still writes, backfilling
+    NULL for that column on every partition this call doesn't touch,
+    rather than raising SchemaMismatchError. Bronze is documented as the
+    immutable record (see README); this is what actually keeps that true
+    across a schema change, instead of the table needing to be dropped
+    and re-landed from the API -- which throws away real accumulated
+    history and is not a step this project should reach for casually.
+    Confirmed with a throwaway table before relying on it, not assumed
+    from the delta-rs docs: a partition-scoped merge write leaves every
+    other partition's data AND the original table's version history
+    (`DeltaTable(...).history()`) untouched.
+
     Args:
         df (pd.DataFrame): The DataFrame containing carbon intensity data
             for exactly one data_date.
@@ -143,6 +157,7 @@ def save_carbon_intensity_data(df: pd.DataFrame, date: str) -> None:
         mode="overwrite",
         predicate=f"data_date = '{date}'",
         partition_by=["data_date"],
+        schema_mode="merge",
         storage_options=storage_options(),
     )
     logger.info(f"Landed {len(df)} rows for data_date={date}")
@@ -254,6 +269,7 @@ def save_regional_mix_data(df: pd.DataFrame, date: str) -> None:
         mode="overwrite",
         predicate=f"data_date = '{date}'",
         partition_by=["data_date"],
+        schema_mode="merge",
         storage_options=storage_options(),
     )
     logger.info(f"Landed {len(df)} regional mix rows for data_date={date}")

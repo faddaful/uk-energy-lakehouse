@@ -178,6 +178,14 @@ def land_system_prices_data(df: pd.DataFrame) -> None:
     so landing a settlement date that already has rows in the table adds
     to it rather than overwriting it -- see the module docstring for why.
 
+    schema_mode="merge": a df with a column this table doesn't have yet
+    still lands, backfilling NULL on every row already there, rather than
+    raising SchemaMismatchError and forcing bronze to be dropped and
+    re-landed from the API to add a column -- see carbon_intensity.py's
+    save_carbon_intensity_data() for where that was actually reached for
+    and shouldn't have been, since this project documents bronze as the
+    immutable record.
+
     Args:
         df (pd.DataFrame): Fetched, already-validated system prices data,
             possibly spanning more than one settlement date.
@@ -187,6 +195,7 @@ def land_system_prices_data(df: pd.DataFrame) -> None:
         df,
         mode="append",
         partition_by=["settlementDate"],
+        schema_mode="merge",
         storage_options=storage_options(),
     )
     logger.info(f"Landed {len(df)} rows")

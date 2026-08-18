@@ -185,4 +185,38 @@ def test_land_regional_mix_data_is_idempotent_per_date(tmp_path, monkeypatch):
     assert len(dt.to_pandas()) == len(df)
 
 
+def test_land_carbon_intensity_data_adds_a_column_without_losing_history(tmp_path, monkeypatch):
+    # A real incident, not a hypothetical: adding intensity_index to this
+    # table was originally done by deleting and re-landing it from the
+    # API, which threw away real accumulated Delta history for no reason
+    # -- schema_mode="merge" on save_carbon_intensity_data() is what
+    # should have been reached for instead. This proves it actually
+    # works: a later write with a column the table didn't have yet lands
+    # without error, backfills NULL on the row that predates it, and
+    # doesn't collapse the table back to a single version.
+    monkeypatch.setenv("TARGET", "local")
+    monkeypatch.setenv("LOCAL_DATA_ROOT", str(tmp_path))
+
+    original = pd.DataFrame([{
+        'data_date': '2026-06-01', 'from': '2026-06-01T00:00Z', 'to': '2026-06-01T00:30Z',
+        'intensity_actual': None, 'intensity_forecast': 100, 'region_id': 13,
+        'loaded_at': pd.Timestamp.now().isoformat(), 'source': 'carbon_intensity_api',
+    }])
+    land_carbon_intensity_data(original)
+
+    with_new_column = pd.DataFrame([{
+        'data_date': '2026-06-02', 'from': '2026-06-02T00:00Z', 'to': '2026-06-02T00:30Z',
+        'intensity_actual': None, 'intensity_forecast': 200, 'intensity_index': 'low', 'region_id': 13,
+        'loaded_at': pd.Timestamp.now().isoformat(), 'source': 'carbon_intensity_api',
+    }])
+    land_carbon_intensity_data(with_new_column)  # must not raise SchemaMismatchError
+
+    dt = DeltaTable(table_uri("bronze", "carbon_intensity"))
+    result = dt.to_pandas().set_index('data_date')
+    assert result.loc['2026-06-01', 'intensity_forecast'] == 100
+    assert pd.isna(result.loc['2026-06-01', 'intensity_index'])
+    assert result.loc['2026-06-02', 'intensity_index'] == 'low'
+    assert len(dt.history()) > 1
+
+
 # Usage: To run the tests, use the command `pytest` in the terminal. Make sure you have the sample JSON file `sample_carbon_intensity.json` in the same directory as this test file.
