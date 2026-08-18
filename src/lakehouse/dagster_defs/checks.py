@@ -6,6 +6,7 @@ from deltalake.exceptions import TableNotFoundError
 
 from lakehouse.dagster_defs.assets import (
     bronze_carbon_intensity,
+    bronze_carbon_intensity_regional_mix,
     bronze_elexon_generation_by_fuel,
     bronze_elexon_system_prices,
     today,
@@ -19,6 +20,7 @@ CARBON_INTENSITY_EXPECTED_COLUMNS = {
     "to",
     "intensity_actual",
     "intensity_forecast",
+    "intensity_index",
     "region_id",
     "loaded_at",
     "source",
@@ -45,6 +47,45 @@ def bronze_carbon_intensity_schema_check() -> AssetCheckResult:
         return AssetCheckResult(passed=False, metadata={"reason": f"no rows for data_date={today()}"})
 
     missing = CARBON_INTENSITY_EXPECTED_COLUMNS - set(df.columns)
+    if missing:
+        return AssetCheckResult(
+            passed=False,
+            metadata={"missing_columns": sorted(missing)},
+        )
+
+    return AssetCheckResult(passed=True, metadata={"rows": len(df), "table_version": dt.version()})
+
+
+CARBON_INTENSITY_REGIONAL_MIX_EXPECTED_COLUMNS = {
+    "data_date",
+    "from",
+    "to",
+    "region_id",
+    "fuel",
+    "perc",
+    "loaded_at",
+    "source",
+}
+
+
+@asset_check(
+    asset=bronze_carbon_intensity_regional_mix,
+    blocking=True,
+    description="Today's bronze regional mix landing is non-empty and has the expected columns.",
+)
+def bronze_carbon_intensity_regional_mix_schema_check() -> AssetCheckResult:
+    uri = table_uri("bronze", "carbon_intensity_regional_mix")
+    try:
+        dt = DeltaTable(uri, storage_options=storage_options())
+    except TableNotFoundError:
+        return AssetCheckResult(passed=False, metadata={"reason": f"no Delta table found at {uri}"})
+
+    df = dt.to_pandas(partitions=[("data_date", "=", today())])
+
+    if df.empty:
+        return AssetCheckResult(passed=False, metadata={"reason": f"no rows for data_date={today()}"})
+
+    missing = CARBON_INTENSITY_REGIONAL_MIX_EXPECTED_COLUMNS - set(df.columns)
     if missing:
         return AssetCheckResult(
             passed=False,

@@ -107,8 +107,10 @@ models:
     description: >
       One row per half hour + region, built on silver_regional_intensity.
       Forecast only -- see intensity_actual_gco2_per_kwh's own
-      description for why it is always NULL, and the model comment for
-      why there is no mix-percentage breakdown here.
+      description for why it is always NULL. The mix-percentage
+      breakdown the same API response also carries is a different grain
+      and lives in fct_regional_generation_mix instead -- see that
+      model's comment.
     tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
@@ -150,6 +152,73 @@ models:
           rather than dropped so a consumer querying gold directly can
           see that for themselves, instead of assuming it exists and
           silently getting no rows back from a filter on it.
+      - name: intensity_index
+        description: >
+          The API's own qualitative band for intensity_forecast_gco2_per_kwh
+          (e.g. "low", "moderate", "high"), carried through unchanged --
+          not derived here. See the model comment for why it is not
+          recomputed from the numeric value anywhere in this project.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["very low", "low", "moderate", "high", "very high"]
+
+  - name: fct_regional_generation_mix
+    description: >
+      One row per half hour + region + fuel, built on
+      silver__carbon_intensity_regional_mix. The genuinely regional fuel
+      mix -- see the model comment for why it is a separate fact from
+      both fct_generation (Elexon, GB-wide, MW) and fct_regional_intensity
+      (same API response, different grain).
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - half_hour_start_utc
+              - region_id
+              - ci_fuel_code
+    columns:
+      - name: regional_generation_mix_fact_key
+        description: Surrogate key, hashed from half_hour_start_utc + region_id + ci_fuel_code.
+        tests: [not_null, unique]
+      - name: date_key
+        description: Foreign key to dim_date.date_key.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: region_key
+        description: Foreign key to dim_region.region_key.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_region')
+                field: region_key
+      - name: ci_fuel_type_key
+        description: Foreign key to dim_ci_fuel_type.ci_fuel_type_key.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_ci_fuel_type')
+                field: ci_fuel_type_key
+      - name: mix_pct
+        description: >
+          This fuel's share of the region's generation mix at this half
+          hour, 0-100. Unlike fct_generation.share_of_mix_pct, this is a
+          forecast percentage the API publishes directly, not a share
+          computed here from MW -- there is no MW figure to compute it
+          from in this data.
+        tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 100
 
 unit_tests:
   - name: test_share_of_mix_handles_zero_total

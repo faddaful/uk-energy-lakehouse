@@ -1,12 +1,12 @@
-# Tests for the silver model. Filename: silver__regional_intensity.yml,
+# Tests for the silver model. Filename: silver__carbon_intensity_regional_mix.yml,
 # sits next to the .sql file in models/silver/.
 
 version: 2
 
 models:
-  - name: silver_regional_intensity
+  - name: silver__carbon_intensity_regional_mix
     description: >
-      One row per half hour per region, deduplicated to the latest
+      One row per half hour + region + fuel, deduplicated to the latest
       loaded_at. The trustworthy layer downstream models build on.
     tests:
       - dbt_utils.unique_combination_of_columns:
@@ -14,6 +14,7 @@ models:
             combination_of_columns:
               - valid_from
               - region_id
+              - ci_fuel_code
     columns:
       - name: valid_from
         tests:
@@ -21,22 +22,21 @@ models:
       - name: region_id
         tests:
           - not_null
-          # Your extractor fetches one region, so pin it. Widen this list
-          # if you ever ingest more regions.
           - accepted_values:
               arguments:
                 values: [8,13]
                 quote: false
-      - name: intensity_forecast
+      - name: ci_fuel_code
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('seed_ci_fuel_type')
+                field: ci_fuel_code
+      - name: mix_pct
         tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
               arguments:
                 min_value: 0
-                max_value: 1500
-      - name: intensity_index
-        tests:
-          - not_null
-          - accepted_values:
-              arguments:
-                values: ["very low", "low", "moderate", "high", "very high"]
+                max_value: 100

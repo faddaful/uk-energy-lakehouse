@@ -120,6 +120,46 @@ seeds:
           - not_null
           - unique
 
+  - name: seed_ci_fuel_type
+    description: >
+      The Carbon Intensity API's own 9-fuel generation mix taxonomy
+      (biomass, coal, gas, hydro, imports, nuclear, other, solar, wind) --
+      a different, coarser classification from seed_fuel_type's 20 Elexon
+      FUELHH codes, not a subset or superset of it. Notably includes
+      solar, which FUELHH does not report (see README's embedded-
+      generation note) and does not split interconnectors by country the
+      way Elexon does. fuel_category reuses the same category vocabulary
+      as seed_fuel_type (Fossil, Low carbon, Renewable, Other,
+      Interconnector) so the two taxonomies can share one colour mapping
+      in a dashboard, but the two seeds are never joined to each other --
+      see fct_regional_generation_mix's own comment for why.
+    config:
+      column_types:
+        ci_fuel_code: varchar
+        ci_fuel_name: varchar
+        fuel_category: varchar
+        is_renewable: boolean
+        is_interconnector: boolean
+        sort_order: integer
+    columns:
+      - name: ci_fuel_code
+        description: The Carbon Intensity API's own fuel label, e.g. "gas", "wind". Natural key.
+        tests:
+          - not_null
+          - unique
+      - name: is_renewable
+        description: Same is_renewable/is_interconnector split as seed_fuel_type, for the same reason.
+        tests:
+          - not_null
+      - name: is_interconnector
+        description: True only for "imports" -- this taxonomy does not split interconnectors by country.
+        tests:
+          - not_null
+      - name: sort_order
+        tests:
+          - not_null
+          - unique
+
   - name: uk_bank_holidays
     description: >
       England-and-Wales, Scotland and Northern Ireland bank holidays,

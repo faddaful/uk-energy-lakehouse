@@ -181,6 +181,10 @@ def land_generation_by_fuel_data(df: pd.DataFrame) -> None:
     so landing a settlement date that already has rows in the table adds
     to it rather than overwriting it -- see the module docstring for why.
 
+    schema_mode="merge": same reason as elexon_system_prices.py's
+    land_system_prices_data() -- lets a future column addition land
+    without dropping and re-fetching this table's whole history.
+
     Args:
         df (pd.DataFrame): Fetched, already-validated generation-by-fuel
             data, possibly spanning more than one settlement date.
@@ -190,6 +194,7 @@ def land_generation_by_fuel_data(df: pd.DataFrame) -> None:
         df,
         mode="append",
         partition_by=["settlementDate"],
+        schema_mode="merge",
         storage_options=storage_options(),
     )
     logger.info(f"Landed {len(df)} rows")

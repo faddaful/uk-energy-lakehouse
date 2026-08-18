@@ -1,0 +1,10 @@
+ci_fuel_code,ci_fuel_name,fuel_category,is_renewable,is_interconnector,sort_order
+gas,Gas,Fossil,false,false,10
+coal,Coal,Fossil,false,false,20
+nuclear,Nuclear,Low carbon,false,false,30
+wind,Wind,Renewable,true,false,40
+solar,Solar,Renewable,true,false,50
+hydro,Hydro,Renewable,true,false,60
+biomass,Biomass,Renewable,true,false,70
+other,Other,Other,false,false,80
+imports,Imports,Interconnector,false,true,90

@@ -100,3 +100,17 @@ models:
       - name: is_interconnector
         description: True for the ten INT* codes (IFA, BritNed, Viking Link, etc.).
         tests: [not_null]
+
+  - name: dim_ci_fuel_type
+    description: >
+      The Carbon Intensity API's own 9-fuel generation mix taxonomy, with
+      a surrogate key added over seed_ci_fuel_type. A different, coarser
+      classification from dim_fuel_type -- see seed_ci_fuel_type's own
+      documentation for why the two are never joined to each other.
+    columns:
+      - name: ci_fuel_type_key
+        description: Surrogate key, hashed from ci_fuel_code. Join target for fct_regional_generation_mix.
+        tests: [not_null, unique]
+      - name: ci_fuel_code
+        description: Natural key -- the Carbon Intensity API's own fuel label, e.g. "gas", "wind".
+        tests: [not_null, unique]

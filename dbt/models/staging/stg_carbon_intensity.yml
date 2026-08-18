@@ -17,6 +17,19 @@ models:
         description: Carbon Intensity API region ID (1 to 18).
         tests:
           - not_null
+      - name: intensity_index
+        description: >
+          The API's own qualitative band for intensity_forecast (e.g.
+          "low", "moderate", "high") -- not derived here, carried through
+          exactly as the API reports it. Its numeric thresholds are not
+          published anywhere this project found, so this is the only
+          source of that classification; do not try to recompute it from
+          intensity_forecast.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["very low", "low", "moderate", "high", "very high"]
       - name: loaded_at
         description: When the extractor landed this row.
         tests:
