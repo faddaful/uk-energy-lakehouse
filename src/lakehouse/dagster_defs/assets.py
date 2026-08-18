@@ -22,6 +22,11 @@ from lakehouse.extractors.elexon_system_prices import (
     land_system_prices_data,
     validate_system_prices_data,
 )
+from lakehouse.extractors.neso_connections import (
+    fetch_connections_data,
+    land_connections_data,
+    validate_connections_data,
+)
 
 # Verify this ID in your browser first:
 # https://api.carbonintensity.org.uk/regional/regionid/8 -> check the "shortname"
@@ -161,6 +166,32 @@ def bronze_elexon_generation_by_fuel() -> MaterializeResult:
         metadata={
             "start_date": MetadataValue.text(start_date),
             "end_date": MetadataValue.text(end_date),
+            "rows": MetadataValue.int(len(df)),
+        }
+    )
+
+
+@asset(
+    name="bronze_neso_connections",
+    description=(
+        "Fetch, validate and land today's TEC connections register in bronze. NESO "
+        "publishes only the current snapshot (see neso_connections.py), so this is what "
+        "actually gives this project a queue history: append-only, one partition per "
+        "as_of_date, same design as the Elexon revision sources for the same reason."
+    ),
+    metadata={"source": MetadataValue.text("neso_tec_register")},
+)
+def bronze_neso_connections() -> MaterializeResult:
+    df = fetch_connections_data()
+
+    if not validate_connections_data(df):
+        raise ValueError("Invalid NESO connections register data")
+
+    land_connections_data(df)
+
+    return MaterializeResult(
+        metadata={
+            "as_of_date": MetadataValue.text(str(df["as_of_date"].iloc[0])),
             "rows": MetadataValue.int(len(df)),
         }
     )

@@ -1,0 +1,5 @@
+﻿Project Name,Customer Name,Connection Site,Stage,MW Connected,MW Increase / Decrease,Cumulative Total Capacity (MW),MW Effective From,Project Status,Agreement Type,HOST TO,Plant Type,Project ID,Project Number,Gate
+Test Wind Farm,Test Developer Ltd,Test GSP,,0.00,50.00,50.00,2029-06-30,Scoping,Direct Connection,NGET,Wind Onshore,TESTPROJ0,PRO-TEST001,1
+Test Immingham,Test Developer Ltd,Test Substation,,0.00,20.00,20.00,2027-07-01,Scoping,Embedded,SPT,Energy Storage System,TESTPROJ1,PRO-TEST002,
+Test Immingham,Test Developer Ltd,Test Substation,,15.00,15.00,15.00,,Built,Embedded,SPT,Energy Storage System,TESTPROJ1,PRO-TEST002,
+,,,,,,,,,,,,,,

@@ -1,0 +1,24 @@
+technology,technology_category,is_renewable,is_generation,sort_order
+CCGT (Combined Cycle Gas Turbine),Fossil,false,true,10
+OCGT (Open Cycle Gas Turbine),Fossil,false,true,20
+Coal,Fossil,false,true,30
+Oil & AGT (Advanced Gas Turbine),Fossil,false,true,40
+Gas Reciprocating,Fossil,false,true,50
+CHP (Combined Heat and Power),Fossil,false,true,60
+Nuclear,Low carbon,false,true,70
+Wind Onshore,Renewable,true,true,80
+Wind Offshore,Renewable,true,true,90
+PV Array (Photo Voltaic/solar),Renewable,true,true,100
+Hydro,Renewable,true,true,110
+Tidal,Renewable,true,true,120
+Biomass,Renewable,true,true,130
+Hydrogen,Other,false,true,140
+Waste,Other,false,true,150
+Thermal,Other,false,true,160
+Energy Storage System,Storage,false,true,170
+Pump Storage,Storage,false,true,180
+LAES (Liquid Air Energy Storage),Storage,false,true,190
+Interconnector,Interconnector,false,false,200
+Demand,Non-generation,false,false,210
+Reactive Compensation,Non-generation,false,false,220
+Substation,Non-generation,false,false,230

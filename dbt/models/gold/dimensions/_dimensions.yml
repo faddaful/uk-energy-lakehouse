@@ -101,6 +101,23 @@ models:
         description: True for the ten INT* codes (IFA, BritNed, Viking Link, etc.).
         tests: [not_null]
 
+  - name: dim_technology
+    description: >
+      NESO TEC register Plant Type technologies, grouped into categories,
+      with a surrogate key added over seed_neso_technology. See
+      seeds/_seeds.yml for how the token list was built from real
+      register data, and for why is_generation exists.
+    columns:
+      - name: technology_key
+        description: Surrogate key, hashed from technology. Join target for fct_connection_queue.
+        tests: [not_null, unique]
+      - name: technology
+        description: Natural key, one of NESO's individual Plant Type tokens, e.g. "Wind Onshore".
+        tests: [not_null, unique]
+      - name: is_generation
+        description: False for Interconnector, Demand, Reactive Compensation and Substation, see seed comment.
+        tests: [not_null]
+
   - name: dim_ci_fuel_type
     description: >
       The Carbon Intensity API's own 9-fuel generation mix taxonomy, with
