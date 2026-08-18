@@ -21,7 +21,7 @@ models:
       - name: ci_fuel_code
         description: >
           The Carbon Intensity API's own fuel label (e.g. "gas", "wind",
-          "imports") -- a different, coarser taxonomy from Elexon's 20
+          "imports"), a different, coarser taxonomy from Elexon's 20
           FUELHH codes. See seed_ci_fuel_type.
         tests:
           - not_null

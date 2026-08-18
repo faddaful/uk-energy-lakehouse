@@ -16,7 +16,7 @@ clean-targets: ["target", "dbt_packages"]
 # dbt_project_evaluator needs this on DuckDB (and Databricks/Spark/
 # Redshift/ClickHouse/Fabric): without it, its macros resolve to dbt's
 # own no-op defaults instead of the package's real implementations, and
-# the audit models build empty rather than erroring -- worth knowing,
+# the audit models build empty rather than erroring, worth knowing,
 # since that failure mode looks like "a clean project" instead of "a
 # missing config line".
 dispatch:
@@ -37,8 +37,8 @@ vars:
     silver_folder_name: "silver"
     # Matches both this project's real prefixes: silver__ (system_prices,
     # generation_by_fuel, and the two revision models) and the one
-    # inconsistent single-underscore outlier, silver_regional_intensity
-    # -- itself a real naming-consistency finding, not something to
+    # inconsistent single-underscore outlier, silver_regional_intensity.
+    # Itself a real naming-consistency finding, not something to
     # paper over by only matching the double-underscore form.
     silver_prefixes: ["silver_"]
     dimensions_folder_name: "dimensions"
@@ -49,12 +49,12 @@ vars:
     marts_prefixes: ["mart_"]
 
 models:
-  # dbt_project_evaluator's ~60 models are disabled by default -- true
+  # dbt_project_evaluator's ~60 models are disabled by default, true
   # only when explicitly passed, e.g.:
   #   uv run dbt build --select package:dbt_project_evaluator dbt_project_evaluator_exceptions --vars 'run_evaluator: true'
   # Disabled nodes never enter the manifest at all, not just the
   # selection: a plain `dbt docs generate` (what publishes to GitHub
-  # Pages) no longer includes any of them, which is the actual point --
+  # Pages) no longer includes any of them, which is the actual point:
   # without this, a visitor's first screen on the published site was
   # dbt_project_evaluator's own overview page instead of this project's
   # (see models/overview.md), because dbt picks whichever installed
@@ -62,7 +62,7 @@ models:
   # than one exists, and this project didn't have one of its own until
   # now. The `"{{ ... }}"` quoting matters: dbt renders a config value
   # that is a single whole Jinja expression natively, returning a real
-  # Python bool from var(), not the string "True"/"False" -- confirmed
+  # Python bool from var(), not the string "True"/"False", confirmed
   # by actually toggling the var and checking the resulting model count
   # in `dbt parse` output, not assumed from how the syntax reads.
   dbt_project_evaluator:
@@ -77,7 +77,7 @@ models:
       +materialized: table
     gold:
       # Tables, materialised inside the same DuckDB file as everything
-      # else -- gold is derived and cheap to rebuild, so there is no
+      # else: gold is derived and cheap to rebuild, so there is no
       # reason to write it back out to ADLS the way bronze is. Getting it
       # to Streamlit/Power BI is a separate export step (a Dagster asset
       # reading these tables, Phase 3's next piece), not a materialisation
@@ -87,7 +87,7 @@ models:
       # catalog, since profiles.yml never sets an explicit target schema
       # and dbt's default naming appends the custom schema to it).
       # staging/silver deliberately stay unscoped in "main", where Phase
-      # 1/2 already built them -- rescoping them now would just orphan
+      # 1/2 already built them, rescoping them now would just orphan
       # those tables for no benefit. gold is new as of this step, so this
       # is the natural point to start separating layers, and it gives the
       # future export asset one schema to read every mart from.
@@ -106,7 +106,7 @@ seeds:
     +schema: seeds
     # Column types for dbt_project_evaluator_exceptions (dbt/seeds/
     # dbt_project_evaluator_exceptions.csv) set here, not in seeds/
-    # _seeds.yml -- see the comment there for why a property-file entry
+    # _seeds.yml, see the comment there for why a property-file entry
     # for this specific seed name doesn't parse at all.
     dbt_project_evaluator_exceptions:
       +column_types:
@@ -115,7 +115,7 @@ seeds:
         id_to_exclude: varchar
         comment: varchar
   # The package ships its own blank seed of the same name; ours (above)
-  # replaces it with real, documented exceptions -- see that file.
+  # replaces it with real, documented exceptions, see that file.
   dbt_project_evaluator:
     dbt_project_evaluator_exceptions:
       +enabled: false

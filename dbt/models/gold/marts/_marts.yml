@@ -12,7 +12,7 @@ models:
       partial rather than plotting it as final.
     columns:
       - name: date_key
-        description: Foreign key to dim_date.date_key -- one row per day, so also unique here.
+        description: Foreign key to dim_date.date_key, one row per day, so also unique here.
         tests: [not_null, unique]
       - name: date_day
         description: The calendar date this row summarises.
@@ -26,7 +26,7 @@ models:
     description: >
       The next 24 hours for the home region (West Midlands, region_id 8),
       ranked by forecast carbon intensity and, where a real settled price
-      exists, by price. Rebuilt fresh on every dbt run -- see
+      exists, by price. Rebuilt fresh on every dbt run, see
       generated_at.
     columns:
       - name: half_hour_start_utc
@@ -37,7 +37,7 @@ models:
         tests: [not_null]
       - name: generated_at
         description: >
-          When this mart was last built. Not decorative -- the Streamlit
+          When this mart was last built. Not decorative: the Streamlit
           app should show it next to every figure this mart produces, so
           staleness is visible rather than assumed away.
         tests: [not_null]
@@ -56,4 +56,4 @@ models:
       - name: pct_periods_revised
         description: >
           revision_count as a percentage of total_periods for the month.
-          Expected to be small most months -- see the model comment.
+          Expected to be small most months, see the model comment.

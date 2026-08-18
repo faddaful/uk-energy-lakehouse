@@ -12,14 +12,10 @@ and forget. This one keeps every version and reports the difference.
 
 ## Layers
 
-- **Bronze** — immutable raw landings, Delta format, every download retained
-- **Silver** — typed, deduplicated, with revisions resolved and audited
-- **Gold** — star schema: 4 dimensions, 3 facts, 3 marts
+Bronze holds immutable raw landings in Delta format, every download retained. Silver is typed and deduplicated, with revisions resolved and audited. Gold is a star schema: 4 dimensions, 3 facts, 3 marts.
 
 ## Where to start
 
-- `mart_revision_summary` — the headline: how often published prices change
-- `fct_settlement_period` — half-hourly prices with settlement run provenance
-- `dim_settlement_period` — why some days have 46 or 50 periods, not 48
+Start with `mart_revision_summary`, the headline number: how often published prices change. `fct_settlement_period` has half-hourly prices with settlement run provenance. `dim_settlement_period` explains why some days have 46 or 50 periods, not 48.
 
 {% enddocs %}
