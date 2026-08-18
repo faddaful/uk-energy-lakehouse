@@ -41,7 +41,7 @@ jobs:
       #    tables instead of real bronze (which is not in Git). The --vars
       #    flag overrides the source path; see the staging model change.
       #    profiles.yml's `extensions: [delta]` downloads and loads DuckDB's
-      #    delta extension on connect -- needs the network access GitHub-
+      #    delta extension on connect, needs the network access GitHub-
       #    hosted runners already have, no extra CI step required.
       - name: dbt deps
         working-directory: dbt
@@ -64,7 +64,7 @@ jobs:
   # pull_request. A fork's PR runs with that PR's own (possibly modified)
   # workflow file, so granting cloud credentials on pull_request would let
   # any external contributor author a step that uses them. Push to main
-  # only runs code that has already been merged -- already trusted. See
+  # only runs code that has already been merged, already trusted. See
   # infra/terraform/main.tf for the federated identity credential this
   # authenticates through: no client secret exists anywhere for this to
   # leak, on either side.
@@ -135,7 +135,7 @@ jobs:
         run: uv run dbt deps
 
       # DuckDB doesn't create the parent directory for its database file,
-      # only the file itself -- a fresh checkout has no data/ at all, so
+      # only the file itself. A fresh checkout has no data/ at all, so
       # opening lakehouse_azure.duckdb fails outright without this. The
       # build job needs the equivalent step for the same reason; this job
       # doesn't share that job's filesystem, so it needs its own.
@@ -144,7 +144,7 @@ jobs:
 
       # Validates the real Azure read path: delta_scan() through the
       # azure extension, credentialed via CHAIN 'cli' the same way the
-      # local Azure CLI login is (see profiles.yml) -- except here the
+      # local Azure CLI login is (see profiles.yml), except here the
       # "CLI login" is azure/login's OIDC exchange above, not a person's
       # `az login` session. Same 56 tests that already run locally.
       # AZURE_STORAGE_ACCOUNT_NAME / AZURE_STORAGE_CONTAINER come from the
@@ -157,7 +157,7 @@ jobs:
 
       # Read-only: catches infra drift or a bad infra/terraform/ change
       # after merge. Runs every time rather than only when infra/terraform/
-      # changed -- simpler CI config, and a plan against unchanged config
+      # changed: simpler CI config, and a plan against unchanged config
       # is a fast, free no-op, so there is little to gain from gating it.
       - name: terraform plan
         working-directory: infra/terraform

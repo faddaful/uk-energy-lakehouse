@@ -72,7 +72,7 @@ def bronze_carbon_intensity() -> MaterializeResult:
 @asset(
     name="bronze_carbon_intensity_regional_mix",
     description=(
-        "Fetch, validate and land today's regional generation mix in bronze -- the "
+        "Fetch, validate and land today's regional generation mix in bronze: the "
         "generationmix array on the same regional intensity endpoint bronze_carbon_intensity "
         "reads, exploded to one row per half hour + fuel. A separate asset, not folded into "
         "bronze_carbon_intensity: one asset per bronze table is this project's convention "

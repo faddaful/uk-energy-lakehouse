@@ -1,5 +1,5 @@
 """Personal energy dashboard. Reads gold straight out of the DuckDB file
-dbt already built -- no export step, because the app runs on the same box
+dbt already built, no export step, because the app runs on the same box
 as the pipeline and reaches your phone over Tailscale from there, not the
 public internet. If that ever changes (e.g. a public Streamlit Cloud
 deployment), that's the point to add an export asset; it isn't needed yet.
@@ -23,7 +23,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DB_NAME = "lakehouse_azure.duckdb" if os.environ.get("TARGET") == "azure" else "lakehouse.duckdb"
 DB_PATH = REPO_ROOT / "data" / DB_NAME
 
-# The one region this pipeline actually forecasts carbon intensity for --
+# The one region this pipeline actually forecasts carbon intensity for:
 # matches mart_best_hours_today's own hardcoded home_region_id = 8 and
 # carbon_intensity.py's --region default. Change all three together if
 # that ever changes. Generation mix has no region breakdown at all: Elexon
@@ -31,7 +31,7 @@ DB_PATH = REPO_ROOT / "data" / DB_NAME
 HOME_REGION_ID = 8
 HOME_REGION_NAME = "West Midlands"
 
-# Fixed per-category colours, not cycled from data -- a category keeps its
+# Fixed per-category colours, not cycled from data: a category keeps its
 # colour across every reload rather than being reassigned when a filter
 # changes which categories are on screen. Slots taken from the project's
 # validated categorical order (dataviz skill), picked for a plausible read:
@@ -48,8 +48,8 @@ FUEL_CATEGORY_COLORS = {
 # Status colours, reserved for exactly this: flagging a period as notable,
 # never reused as a generic series colour.
 EVENT_COLORS = {
-    "Negative price": "#0ca30c",  # good -- system is paying to take power
-    "Large swing": "#ec835a",  # serious -- a real move worth noticing
+    "Negative price": "#0ca30c",  # good: system is paying to take power
+    "Large swing": "#ec835a",  # serious: a real move worth noticing
     "Normal": "#c3c2b7",  # recedes; most periods are unremarkable
 }
 
@@ -63,11 +63,11 @@ NOTABLE_SWING_GBP_PER_MWH = 50
 def run_query(sql: str, params: list | None = None) -> pd.DataFrame:
     """Read-only connection: the dashboard must never hold DuckDB's single
     write lock, or a dbt run on this same file would block behind it.
-    Cached for 5 minutes -- gold only moves on the half-hourly schedule
+    Cached for 5 minutes: gold only moves on the half-hourly schedule
     anyway, so re-querying on every widget interaction buys nothing.
     Parameters are bound, not string-formatted, even though today's only
     caller passes values Streamlit widgets already validated (a date, a
-    timestamp) -- one query-running function for the whole app is worth
+    timestamp). One query-running function for the whole app is worth
     keeping safe by construction rather than trusted by inspection."""
     con = duckdb.connect(str(DB_PATH), read_only=True)
     try:
@@ -86,7 +86,7 @@ def render_regional_greenness() -> None:
     """)
     if df.empty:
         st.info(
-            f"No carbon intensity forecast for {HOME_REGION_NAME} yet -- fetch fresh "
+            f"No carbon intensity forecast for {HOME_REGION_NAME} yet. Fetch fresh "
             "data and rebuild gold (`make build-local`) to populate it."
         )
         return
@@ -103,7 +103,7 @@ def render_regional_greenness() -> None:
 
     # index is the Carbon Intensity API's own published band, carried
     # through unchanged from bronze (see fct_regional_intensity's model
-    # comment) -- not a threshold guessed at in this app. delta_color
+    # comment), not a threshold guessed at in this app. delta_color
     # leans on st.metric's built-in green/red rather than hand-rolled
     # HTML: "normal" for the two clean bands, "inverse" for the two dirty
     # ones, "off" (grey, no arrow) for moderate.
@@ -170,7 +170,7 @@ def render_generation_mix() -> None:
         "select min(settlement_date) as earliest, max(settlement_date) as latest from main_gold.fct_generation"
     )
     if bounds.empty or pd.isna(bounds["latest"].iloc[0]):
-        st.info("No generation data yet -- run the pipeline to land some.")
+        st.info("No generation data yet. Run the pipeline to land some.")
         return
     earliest_date = bounds["earliest"].iloc[0].date()
     latest_date = bounds["latest"].iloc[0].date()
@@ -209,7 +209,7 @@ def render_generation_mix() -> None:
     st.caption(f"{picked_time} UTC")
 
     # Net-mix shares (interconnectors included in the denominator, see
-    # fct_generation's own comment) can run negative or over 100% -- shown
+    # fct_generation's own comment) can run negative or over 100%, shown
     # as a running total below rather than clamped away, so a category
     # this dashboard doesn't call out by name is never silently missing.
     by_category = (
@@ -257,8 +257,8 @@ def render_best_hours() -> None:
     if df.empty:
         st.info(
             "No forecast for the next 24 hours yet. mart_best_hours_today is built "
-            "from carbon_intensity's forecast, which only reaches 48 hours out -- "
-            "fetch fresh data and rebuild gold (`make build-local`) to populate it."
+            "from carbon_intensity's forecast, which only reaches 48 hours out. "
+            "Fetch fresh data and rebuild gold (`make build-local`) to populate it."
         )
         return
 
@@ -268,7 +268,7 @@ def render_best_hours() -> None:
         "carbon intensity: lower gCO2/kWh means a cleaner half hour to use "
         "electricity. Price only appears once a half hour has actually settled, "
         "a few hours behind real time, so most of the next 24 hours have no price "
-        "yet -- that's expected, not missing data."
+        "yet. That's expected, not missing data."
     )
     st.caption(f"Generated {df['generated_at'].iloc[0]}")
 
@@ -276,7 +276,7 @@ def render_best_hours() -> None:
     if max_hours > 4:
         # range() stops at max_hours itself only when it happens to be even
         # (50 rows -> 25 hours, an odd number a step-2 range never lands
-        # on) -- append it explicitly rather than silently rounding the
+        # on). Append it explicitly rather than silently rounding the
         # default down to the nearest even option.
         hour_options = list(range(2, max_hours, 2)) + [max_hours]
         hours_ahead = st.select_slider("Look ahead", options=hour_options, value=max_hours)
@@ -342,7 +342,7 @@ def _label_event(row: pd.Series) -> str:
 def render_price_events() -> None:
     # Fetches a generous 120-period window so lag() has a real previous
     # value for every one of the (at most 100) periods a viewer can select
-    # below -- lag() runs over the window's own ascending order regardless
+    # below. lag() runs over the window's own ascending order regardless
     # of how the outer query is sorted, so this reads fine sorted newest
     # first for display.
     df = run_query("""
@@ -362,12 +362,12 @@ def render_price_events() -> None:
         limit 100
     """)
     if df.empty:
-        st.info("No settled prices yet -- run the pipeline to land some.")
+        st.info("No settled prices yet. Run the pipeline to land some.")
         return
 
     st.write(
         "GB's system sell price, set nationally for the whole grid rather than "
-        "per region, for each half-hour settlement period as it's settled -- a "
+        "per region, for each half-hour settlement period as it's settled, a "
         "few hours behind real time. Flagged below: half hours the system "
         "actually paid to take power (a negative price), and swings of "
         f"£{NOTABLE_SWING_GBP_PER_MWH}/MWh or more from the half hour before."
@@ -404,7 +404,7 @@ def render_price_events() -> None:
 
     events = df[df["event"] != "Normal"]
     if events.empty:
-        st.caption(f"No notable price events in the last {periods_shown} settled periods -- the healthy state.")
+        st.caption(f"No notable price events in the last {periods_shown} settled periods, the healthy state.")
     else:
         st.dataframe(
             events[

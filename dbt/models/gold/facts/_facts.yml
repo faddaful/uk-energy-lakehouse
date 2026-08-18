@@ -8,7 +8,7 @@ models:
     description: >
       One row per settlement_date + settlement_period, built on
       silver__system_prices. settlement_period_start_utc is Elexon's own
-      UTC timestamp, not derived from period-number arithmetic -- see
+      UTC timestamp, not derived from period-number arithmetic, see
       the model comment and {{ doc("settlement_period_start_utc") }}.
     tests:
       - dbt_utils.unique_combination_of_columns:
@@ -55,7 +55,7 @@ models:
       each fuel's share of the half-hourly transmission-metered mix.
       Excludes embedded generation such as distribution-connected solar,
       which FUELHH does not observe (see README). share_of_mix_pct
-      includes interconnectors in its denominator -- see the model
+      includes interconnectors in its denominator, see the model
       comment for the reasoning and the empirical range this produces.
     tests:
       - dbt_utils.unique_combination_of_columns:
@@ -106,10 +106,10 @@ models:
   - name: fct_regional_intensity
     description: >
       One row per half hour + region, built on silver_regional_intensity.
-      Forecast only -- see intensity_actual_gco2_per_kwh's own
+      Forecast only, see intensity_actual_gco2_per_kwh's own
       description for why it is always NULL. The mix-percentage
       breakdown the same API response also carries is a different grain
-      and lives in fct_regional_generation_mix instead -- see that
+      and lives in fct_regional_generation_mix instead, see that
       model's comment.
     tests:
       - dbt_utils.unique_combination_of_columns:
@@ -155,7 +155,7 @@ models:
       - name: intensity_index
         description: >
           The API's own qualitative band for intensity_forecast_gco2_per_kwh
-          (e.g. "low", "moderate", "high"), carried through unchanged --
+          (e.g. "low", "moderate", "high"), carried through unchanged,
           not derived here. See the model comment for why it is not
           recomputed from the numeric value anywhere in this project.
         tests:
@@ -168,7 +168,7 @@ models:
     description: >
       One row per half hour + region + fuel, built on
       silver__carbon_intensity_regional_mix. The genuinely regional fuel
-      mix -- see the model comment for why it is a separate fact from
+      mix, see the model comment for why it is a separate fact from
       both fct_generation (Elexon, GB-wide, MW) and fct_regional_intensity
       (same API response, different grain).
     tests:
@@ -211,7 +211,7 @@ models:
           This fuel's share of the region's generation mix at this half
           hour, 0-100. Unlike fct_generation.share_of_mix_pct, this is a
           forecast percentage the API publishes directly, not a share
-          computed here from MW -- there is no MW figure to compute it
+          computed here from MW: there is no MW figure to compute it
           from in this data.
         tests:
           - not_null
@@ -259,7 +259,7 @@ unit_tests:
       Sanity check on the arithmetic itself, not just the zero-guard: two
       fuel types in the same period should split 100% in proportion to
       their generation_mw, and interconnectors count toward the
-      denominator (net-mix semantics -- see the model comment).
+      denominator (net-mix semantics, see the model comment).
     model: fct_generation
     overrides:
       macros:

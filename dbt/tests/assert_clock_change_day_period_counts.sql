@@ -5,7 +5,7 @@
 -- reached a real clock-change day, because dim_date is fully
 -- deterministic (a date spine plus a static holidays seed, both always
 -- present). It runs against dim_date's entire real range on every
--- build -- 2023 through ~400 days past today -- so it covers every
+-- build (2023 through ~400 days past today), so it covers every
 -- clock-change day in that span, not just one hand-picked example.
 --
 -- A dbt unit test (fixed given/expect rows) was the guide's original
@@ -15,8 +15,8 @@
 -- way to shrink the unit test's expected output down to a couple of
 -- example dates without also somehow overriding the spine. Testing every
 -- day the real model produces is strictly stronger anyway: it is what
--- caught, for free, that 31 March 2024 is itself a Sunday -- exactly the
--- off-by-one edge case the guide warned needed dedicated coverage -- with
+-- caught, for free, that 31 March 2024 is itself a Sunday (exactly the
+-- off-by-one edge case the guide warned needed dedicated coverage), with
 -- no need to have picked that year by hand.
 
 select

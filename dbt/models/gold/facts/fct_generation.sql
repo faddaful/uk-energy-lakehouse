@@ -5,8 +5,8 @@
 -- Interconnector semantics, decided explicitly rather than left implicit:
 -- total_generation_mw (the share_of_mix_pct denominator) INCLUDES
 -- interconnectors. This is net-mix semantics, not "domestic generation
--- only". The alternative -- excluding interconnectors from the
--- denominator -- was considered and rejected: it would make
+-- only". The alternative (excluding interconnectors from the
+-- denominator) was considered and rejected: it would make
 -- share_of_mix_pct answer "what powered GB, including imports we cannot
 -- attribute a carbon figure to" while still calling the column a share
 -- of "the mix", which is a more misleading number than the one chosen.
@@ -20,8 +20,8 @@
 -- generation alone) and under 100% when GB is a net importer. It hit
 -- exactly 0% for two consecutive periods on 2026-07-07, when every
 -- domestic fuel type was reported as literal 0 while interconnector
--- flows were already populated -- a genuine late-publish gap in Elexon's
--- feed, not a bug in this model. See
+-- flows were already populated (a genuine late-publish gap in Elexon's
+-- feed, not a bug in this model). See
 -- tests/assert_mix_shares_within_expected_range.sql for how this
 -- tolerance is actually enforced.
 --
@@ -44,7 +44,7 @@ with generation as (
     select * from {{ ref('silver__generation_by_fuel') }}
 
     -- Same 35-day lookback as fct_settlement_period, matching
-    -- silver__generation_by_fuel's own reprocessing window -- see that
+    -- silver__generation_by_fuel's own reprocessing window. See that
     -- model's comment and fct_settlement_period.sql for why.
     {% if is_incremental() %}
     where settlement_date >= (

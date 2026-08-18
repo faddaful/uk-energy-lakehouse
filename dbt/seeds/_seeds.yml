@@ -7,7 +7,7 @@
 # Named seed_<x>, not dim_<x>: a seed and a gold dimension model sharing
 # one name (as this project's companion guide originally suggested) is
 # only a deprecation warning on the current dbt version, not a hard
-# error -- confirmed by actually running `dbt parse` with that naming
+# error. Confirmed by actually running `dbt parse` with that naming
 # before deciding it needed fixing, not assumed from the docs. It reads
 # "Found resources with the same name 'dim_region'... Please update one
 # of the resources to have a unique name" and is explicitly flagged as
@@ -19,22 +19,22 @@ version: 2
 seeds:
   # dbt_project_evaluator_exceptions is deliberately NOT declared here.
   # Reproduced directly: even a bare `- name: dbt_project_evaluator_exceptions`
-  # entry with no other keys makes dbt 1.12 refuse to parse at all --
-  # "dbt found two schema.yml entries for the same resource" -- because
+  # entry with no other keys makes dbt 1.12 refuse to parse at all:
+  # "dbt found two schema.yml entries for the same resource", because
   # the installed package ships its own seeds/seeds.yml describing a
   # seed of that exact name, and dbt does not scope that collision check
   # by package the way ref() resolution itself is scoped. The seed still
   # works and still gets picked up over the package's own (see
   # dbt_project.yml's +enabled: false on the package's version, and its
-  # own comment on why ref() resolves to ours) -- it just cannot also
+  # own comment on why ref() resolves to ours), it just cannot also
   # have a property-file entry in this project. Column types are set via
   # dbt_project.yml's seed config instead, which needs no schema.yml
   # entry to work.
   - name: seed_region
     description: >
       The Carbon Intensity API's 14 DNO regions, plus the three country
-      aggregates (England, Scotland, Wales) and Great Britain as a whole
-      -- 18 rows total, region_id 1 to 18. gold/dimensions/dim_region.sql
+      aggregates (England, Scotland, Wales) and Great Britain as a whole:
+      18 rows total, region_id 1 to 18. gold/dimensions/dim_region.sql
       adds a surrogate key on top of this; this seed is the natural key
       and its attributes.
     config:
@@ -82,7 +82,7 @@ seeds:
       codes here were confirmed present in this project's own real
       bronze data (data/bronze/elexon_generation_by_fuel, 90 days,
       2026-05-18 to 2026-08-16) before this seed was written, not
-      assumed from a spec -- `select distinct fuelType` matched exactly.
+      assumed from a spec: `select distinct fuelType` matched exactly.
     config:
       column_types:
         fuel_type_code: varchar
@@ -123,7 +123,7 @@ seeds:
   - name: seed_ci_fuel_type
     description: >
       The Carbon Intensity API's own 9-fuel generation mix taxonomy
-      (biomass, coal, gas, hydro, imports, nuclear, other, solar, wind) --
+      (biomass, coal, gas, hydro, imports, nuclear, other, solar, wind),
       a different, coarser classification from seed_fuel_type's 20 Elexon
       FUELHH codes, not a subset or superset of it. Notably includes
       solar, which FUELHH does not report (see README's embedded-
@@ -131,7 +131,7 @@ seeds:
       way Elexon does. fuel_category reuses the same category vocabulary
       as seed_fuel_type (Fossil, Low carbon, Renewable, Other,
       Interconnector) so the two taxonomies can share one colour mapping
-      in a dashboard, but the two seeds are never joined to each other --
+      in a dashboard, but the two seeds are never joined to each other:
       see fct_regional_generation_mix's own comment for why.
     config:
       column_types:
@@ -152,7 +152,7 @@ seeds:
         tests:
           - not_null
       - name: is_interconnector
-        description: True only for "imports" -- this taxonomy does not split interconnectors by country.
+        description: True only for "imports", this taxonomy does not split interconnectors by country.
         tests:
           - not_null
       - name: sort_order
@@ -164,7 +164,7 @@ seeds:
     description: >
       England-and-Wales, Scotland and Northern Ireland bank holidays,
       2023 to 2028, downloaded from the gov.uk bank holidays API
-      (https://www.gov.uk/bank-holidays.json) -- the canonical source --
+      (https://www.gov.uk/bank-holidays.json), the canonical source,
       on 2026-08-16. Only england-and-wales is used by dim_date's
       is_working_day/is_bank_holiday columns today; the other two nations
       are kept in the seed in case a later phase needs them.

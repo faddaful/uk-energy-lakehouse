@@ -1,6 +1,6 @@
 -- Staging: read bronze (a Delta table), rename to clean names, cast
 -- types. No business logic here. Same shape as stg_carbon_intensity.sql,
--- reading a sibling bronze table -- see carbon_intensity.py's module
+-- reading a sibling bronze table. See carbon_intensity.py's module
 -- docstring for why generationmix lands as its own table rather than a
 -- nested column on the intensity one.
 --

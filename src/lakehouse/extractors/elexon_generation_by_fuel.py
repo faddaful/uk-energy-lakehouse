@@ -2,7 +2,7 @@
 Call the Elexon Insights API for generation by fuel type at settlement
 period grain, check the response looks right, and land it as a Delta table
 under bronze/elexon_generation_by_fuel (data/bronze/... for TARGET=local,
-an ADLS container for TARGET=azure -- see lakehouse.io.storage).
+an ADLS container for TARGET=azure, see lakehouse.io.storage).
 
 Same shape as carbon_intensity.py and elexon_system_prices.py: one function
 fetches, one validates, one lands. Landing is append-only (mode="append"),
@@ -179,10 +179,10 @@ def land_generation_by_fuel_data(df: pd.DataFrame) -> None:
     write once per date the way the pre-Delta file-per-landing version of
     this function had to. mode="append" never replaces or removes a row,
     so landing a settlement date that already has rows in the table adds
-    to it rather than overwriting it -- see the module docstring for why.
+    to it rather than overwriting it, see the module docstring for why.
 
     schema_mode="merge": same reason as elexon_system_prices.py's
-    land_system_prices_data() -- lets a future column addition land
+    land_system_prices_data(). Lets a future column addition land
     without dropping and re-fetching this table's whole history.
 
     Args:

@@ -239,3 +239,7 @@ infra/terraform/*.tfvars
 infra/terraform/.terraform.lock.hcl.bak
 infra/terraform/tfplan
 .DS_Store
+
+# Personal config, not for the shared repo
+CLAUDE.md
+docs/STYLE.md

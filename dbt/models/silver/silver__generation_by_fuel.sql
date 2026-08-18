@@ -3,7 +3,7 @@
 --
 -- Same design as silver__system_prices.sql, same reason: bronze has no
 -- settlement-run-type field (checked against the live FUELHH endpoint
--- directly, not assumed — see README), so the latest loaded_at is the
+-- directly, not assumed, see README), so the latest loaded_at is the
 -- only, and the correct, signal to resolve on. The one difference from
 -- silver__system_prices.sql is the grain: this dataset's row key includes
 -- fuel_type, since one row here is one fuel type within one settlement

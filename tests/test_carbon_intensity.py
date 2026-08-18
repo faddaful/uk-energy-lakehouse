@@ -113,7 +113,7 @@ def test_land_carbon_intensity_data(tmp_path, monkeypatch):
 
 def test_land_carbon_intensity_data_is_idempotent_per_date(tmp_path, monkeypatch):
     # Landing the same data_date twice must replace that date's rows, not
-    # duplicate them -- the Delta equivalent of the old "same day
+    # duplicate them: the Delta equivalent of the old "same day
     # overwrites the same file" rule.
     monkeypatch.setenv("TARGET", "local")
     monkeypatch.setenv("LOCAL_DATA_ROOT", str(tmp_path))
@@ -130,7 +130,7 @@ def test_land_carbon_intensity_data_is_idempotent_per_date(tmp_path, monkeypatch
 
 def test_land_carbon_intensity_data_does_not_touch_other_dates(tmp_path, monkeypatch):
     # Landing one data_date must leave rows already in the table for a
-    # different data_date untouched -- the whole point of the
+    # different data_date untouched: the whole point of the
     # partition-scoped predicate over a blind full-table overwrite.
     monkeypatch.setenv("TARGET", "local")
     monkeypatch.setenv("LOCAL_DATA_ROOT", str(tmp_path))

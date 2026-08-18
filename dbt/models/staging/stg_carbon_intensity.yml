@@ -20,7 +20,7 @@ models:
       - name: intensity_index
         description: >
           The API's own qualitative band for intensity_forecast (e.g.
-          "low", "moderate", "high") -- not derived here, carried through
+          "low", "moderate", "high"), not derived here, carried through
           exactly as the API reports it. Its numeric thresholds are not
           published anywhere this project found, so this is the only
           source of that classification; do not try to recompute it from

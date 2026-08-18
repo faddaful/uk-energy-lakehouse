@@ -1,5 +1,5 @@
 """On-demand Dagster job: starts the Streamlit dashboard as a detached
-background process. Not an asset -- a dashboard is a process to launch,
+background process. Not an asset: a dashboard is a process to launch,
 not data to materialise, so it sits outside the asset graph as its own
 job, triggered by hand from the Dagster UI (reachable over Tailscale,
 same as the dashboard itself once it's up).
@@ -48,7 +48,7 @@ def start_streamlit_dashboard(context: OpExecutionContext) -> None:
         cwd=REPO_ROOT,
         start_new_session=True,
     )
-    context.log.info(f"Started dashboard on port {DASHBOARD_PORT} -- same Tailscale IP as this Dagster UI.")
+    context.log.info(f"Started dashboard on port {DASHBOARD_PORT}, same Tailscale IP as this Dagster UI.")
 
 
 @job(description="Start the Streamlit dashboard on demand, if it isn't already running.")

@@ -1,8 +1,8 @@
 # Publishes dbt's generated documentation site (lineage graph + column-
 # level catalog) to GitHub Pages. Builds against the same committed
 # fixtures as CI's build job, deliberately: publishing docs never needs
-# Azure credentials, for the same reason ci.yml's build job doesn't --
-# see that file's own comments. `dbt run` happens before `docs generate`
+# Azure credentials, for the same reason ci.yml's build job doesn't.
+# See that file's own comments. `dbt run` happens before `docs generate`
 # on purpose too: docs generate alone only produces the lineage graph
 # with no column-level detail, because there is no warehouse to read a
 # catalog from yet.
