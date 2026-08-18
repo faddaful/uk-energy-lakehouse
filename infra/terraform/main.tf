@@ -40,7 +40,7 @@ resource "azurerm_storage_container" "lakehouse" {
 }
 
 # This is the actual cost tripwire for the whole project. Amount is in
-# whatever currency this subscription bills in -- assumed GBP here (a UK
+# whatever currency this subscription bills in, assumed GBP here (a UK
 # tenant, signed up from the UK), not something Terraform lets you pin
 # explicitly on this resource. If Cost Management ever shows a different
 # currency, this number means something other than 1.50 GBP and is worth
@@ -74,8 +74,8 @@ resource "azurerm_consumption_budget_subscription" "this" {
 
 # Lets your own signed-in identity read and write data with Azure AD,
 # so no account keys are needed in your application code. principal_id is
-# the pinned var.my_object_id, not data.azurerm_client_config.current --
-# see the variable's own comment for why that distinction is load-bearing
+# the pinned var.my_object_id, not data.azurerm_client_config.current.
+# See the variable's own comment for why that distinction is load-bearing
 # here, not stylistic.
 resource "azurerm_role_assignment" "me_blob_contributor" {
   scope                = azurerm_storage_account.this.id
@@ -105,7 +105,7 @@ resource "azuread_service_principal" "github_actions" {
 resource "azuread_application_federated_identity_credential" "github_actions_main" {
   application_id = azuread_application.github_actions.id
   display_name   = "github-actions-push-main"
-  description    = "GitHub Actions on ${var.github_repo}, push to main only -- see README for why not pull_request"
+  description    = "GitHub Actions on ${var.github_repo}, push to main only, see README for why not pull_request"
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
   subject        = "repo:${var.github_repo}:ref:refs/heads/main"
@@ -143,15 +143,15 @@ resource "azurerm_role_assignment" "github_actions_reader" {
 # primary_connection_string, etc.) that only exist by calling listKeys,
 # and the provider populates them on every refresh regardless of whether
 # this config ever reads them. Reader deliberately excludes
-# Microsoft.Storage/storageAccounts/listKeys/action -- keys are full
-# credential material, a read-only role should not be able to mint them
-# -- so plain `terraform plan` 403'd on this in CI. storage_use_azuread
+# Microsoft.Storage/storageAccounts/listKeys/action (keys are full
+# credential material, a read-only role should not be able to mint them),
+# so plain `terraform plan` 403'd on this in CI. storage_use_azuread
 # on the provider (versions.tf) was tried first, on the theory that it
 # would make the provider use Azure AD instead of ever calling listKeys;
 # confirmed with TF_LOG=DEBUG that it does not eliminate this specific
 # call for azurerm_storage_account's own attribute refresh, only for
 # separate data-plane resources. Storage Account Contributor is the
-# narrowest built-in role that includes listKeys -- it is a
+# narrowest built-in role that includes listKeys. It is a
 # Microsoft.Storage/storageAccounts/* wildcard, broader than ideal, but
 # scoped to this one storage account, not the resource group, and CI
 # already fully manages this exact resource via Terraform regardless.

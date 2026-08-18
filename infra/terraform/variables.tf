@@ -19,7 +19,7 @@ variable "github_repo" {
   # This is not plain "owner/repo". GitHub appends the owner's and repo's
   # stable numeric IDs (repo:owner@ownerId/repo@repoId:...) to the OIDC
   # subject instead of the plain names whenever a repo has rename or
-  # ownership-transfer history -- a protection against someone later
+  # ownership-transfer history: a protection against someone later
   # claiming an old, now-free repo name and inheriting its federated
   # credential trust. This repo has that history, confirmed two ways: the
   # AADSTS700213 error from a real failed CI run named the exact subject
@@ -29,15 +29,15 @@ variable "github_repo" {
   # subject string, there is no wildcard or "match the current name"
   # option, so this has to be the ID-suffixed form or every CI run fails
   # AADSTS700213 the same way. If this repo is ever renamed again, this
-  # value does not need to change -- the ids are stable across renames,
+  # value does not need to change: the ids are stable across renames,
   # that is the entire point of them existing.
-  description = "GitHub's OIDC subject claim for this repo (owner@ownerId/repo@repoId, not plain owner/repo -- see comment)"
+  description = "GitHub's OIDC subject claim for this repo (owner@ownerId/repo@repoId, not plain owner/repo, see comment)"
   type        = string
   default     = "faddaful@25750119/uk-energy-lakehouse@1318837658"
 }
 
 variable "my_object_id" {
-  # Pinned, not read from data.azurerm_client_config.current.object_id --
+  # Pinned, not read from data.azurerm_client_config.current.object_id:
   # that data source resolves to whoever is CURRENTLY authenticated when
   # terraform runs, not a fixed reference to "me". Using it here meant
   # every CI run (authenticated as the GitHub Actions service principal,
@@ -45,7 +45,7 @@ variable "my_object_id" {
   # to CI's object id, and planned to destroy-and-replace it: not a
   # no-op, an actual plan to strip my own blob access and redundantly
   # grant CI's identity a role it already separately has. Never actually
-  # applied -- caught in a `terraform plan` in CI before any apply ran --
+  # applied (caught in a `terraform plan` in CI before any apply ran),
   # but it would have flip-flopped destructively forever, alternating
   # between "belongs to me" and "belongs to CI" depending on who ran
   # terraform last. data.azurerm_client_config.current is still the right

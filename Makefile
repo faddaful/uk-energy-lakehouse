@@ -62,7 +62,7 @@ build-azure:
 # destroys the GitHub Actions app registration along with everything
 # else; re-applying mints a brand new AZURE_CLIENT_ID, which silently
 # breaks the GitHub repo secret you already set until it's updated by
-# hand -- there is no `gh` CLI here to do that for you, and it needs your
+# hand: there is no `gh` CLI here to do that for you, and it needs your
 # browser regardless. So this stops after printing the new values rather
 # than pretending the Azure side is back to working when it isn't yet:
 # update .env and the GitHub secret, then run `make build-azure` yourself

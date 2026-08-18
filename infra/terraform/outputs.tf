@@ -10,7 +10,7 @@ output "abfss_root" {
   value = "abfss://${azurerm_storage_container.lakehouse.name}@${azurerm_storage_account.this.name}.dfs.core.windows.net"
 }
 
-# Not secrets -- a client ID, tenant ID, and subscription ID identify an
+# Not secrets: a client ID, tenant ID, and subscription ID identify an
 # application, they don't authenticate as one. The federated identity
 # credential is what actually grants access, and that trust relationship
 # lives in Azure AD, not in these values. Still go in GitHub as repo
