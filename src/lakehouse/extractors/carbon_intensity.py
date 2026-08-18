@@ -1,7 +1,7 @@
 """
 Call the API for your specific region, check the response looks right, and
 land it as a Delta table under bronze/carbon_intensity (data/bronze/... for
-TARGET=local, an ADLS container for TARGET=azure -- see lakehouse.io.storage).
+TARGET=local, an ADLS container for TARGET=azure, see lakehouse.io.storage).
 
 One function fetches, one validates, one lands. These small functions are
 testable.
@@ -12,7 +12,7 @@ This is a partition-scoped Delta overwrite (mode="overwrite", predicate on
 data_date), not a raw file overwrite: every other date already in the
 table is left untouched, and the replaced version is still recoverable
 through Delta's history/time travel if you ever need it. Elexon's bronze
-tables use mode="append" instead and never replace anything -- see
+tables use mode="append" instead and never replace anything, see
 elexon_system_prices.py's module docstring for why the two sources differ.
 
 Backfill-capable: the function takes a date range argument, so I can load
@@ -26,12 +26,12 @@ Two bronze tables come out of the one regional endpoint, not one: every
 entry it returns carries an intensity forecast/index AND a generationmix
 array (checked directly against the live API before writing this, not
 assumed). intensity/index is one row per half hour + region, generationmix
-is naturally one row per half hour + region + fuel -- different grains, so
+is naturally one row per half hour + region + fuel, different grains, so
 they land as bronze/carbon_intensity and bronze/carbon_intensity_regional_mix
 rather than one table with a nested column forced flat. Carbon
 Intensity's own 9-fuel breakdown (solar and hydro included, no per-
 interconnector split) is a different taxonomy from Elexon's 20 FUELHH
-codes fct_generation is built on -- see seed_ci_fuel_type -- so this is
+codes fct_generation is built on (see seed_ci_fuel_type), so this is
 genuinely a second, regional mix, not a more-detailed version of the
 first.
 """
@@ -128,7 +128,7 @@ def save_carbon_intensity_data(df: pd.DataFrame, date: str) -> None:
     partition_by=["data_date"] means Delta physically separates each
     date's files, so this replace only ever rewrites files for `date`.
     The predicate is also a correctness check for free: every row in df
-    must actually match data_date = date, or the write fails -- catching a
+    must actually match data_date = date, or the write fails, catching a
     fetch/grouping bug here instead of silently landing a date's data
     under the wrong partition.
 
@@ -139,7 +139,7 @@ def save_carbon_intensity_data(df: pd.DataFrame, date: str) -> None:
     rather than raising SchemaMismatchError. Bronze is documented as the
     immutable record (see README); this is what actually keeps that true
     across a schema change, instead of the table needing to be dropped
-    and re-landed from the API -- which throws away real accumulated
+    and re-landed from the API, which throws away real accumulated
     history and is not a step this project should reach for casually.
     Confirmed with a throwaway table before relying on it, not assumed
     from the delta-rs docs: a partition-scoped merge write leaves every
@@ -181,7 +181,7 @@ def land_carbon_intensity_data(df: pd.DataFrame) -> None:
 def fetch_regional_mix_data(start_date: str, end_date: str, region: str) -> pd.DataFrame:
     """
     Fetch the regional generation mix (% per fuel) for every half hour in a
-    date range -- the generationmix array on the same regional intensity
+    date range: the generationmix array on the same regional intensity
     endpoint fetch_carbon_intensity_data() calls, exploded to one row per
     half hour + fuel rather than left as a nested column.
 
@@ -256,7 +256,7 @@ def save_regional_mix_data(df: pd.DataFrame, date: str) -> None:
     """
     Land one data_date's rows into the bronze Delta table, same
     partition-scoped overwrite as save_carbon_intensity_data() and for the
-    same reason -- see that function's docstring.
+    same reason, see that function's docstring.
 
     Args:
         df (pd.DataFrame): The DataFrame containing regional mix data for
@@ -278,7 +278,7 @@ def save_regional_mix_data(df: pd.DataFrame, date: str) -> None:
 def land_regional_mix_data(df: pd.DataFrame) -> None:
     """
     Split a fetched, validated DataFrame by data_date and land each date's
-    rows as its own partition-scoped overwrite -- same reason as
+    rows as its own partition-scoped overwrite, same reason as
     land_carbon_intensity_data().
 
     Args:

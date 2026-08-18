@@ -39,7 +39,7 @@ def bronze_carbon_intensity_schema_check() -> AssetCheckResult:
     except TableNotFoundError:
         return AssetCheckResult(passed=False, metadata={"reason": f"no Delta table found at {uri}"})
 
-    # Read only today's partition, not the whole table -- the whole point
+    # Read only today's partition, not the whole table: the whole point
     # of partition_by=["data_date"] on the write side.
     df = dt.to_pandas(partitions=[("data_date", "=", today())])
 
@@ -97,7 +97,7 @@ def bronze_carbon_intensity_regional_mix_schema_check() -> AssetCheckResult:
 
 # Elexon system prices bronze is append-only (see README): every landing
 # for a settlement_date is still in the table, not just the latest one.
-# Filtering to today's partition and checking it is non-empty is enough --
+# Filtering to today's partition and checking it is non-empty is enough:
 # it does not need to be exactly one landing's worth of rows.
 ELEXON_SYSTEM_PRICES_EXPECTED_COLUMNS = {
     "settlementDate",

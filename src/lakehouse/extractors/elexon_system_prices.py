@@ -2,7 +2,7 @@
 Call the Elexon Insights API for system buy/sell price and imbalance data
 at settlement period grain, check the response looks right, and land it as
 a Delta table under bronze/elexon_system_prices (data/bronze/... for
-TARGET=local, an ADLS container for TARGET=azure -- see lakehouse.io.storage).
+TARGET=local, an ADLS container for TARGET=azure, see lakehouse.io.storage).
 
 Same shape as carbon_intensity.py: one function fetches, one validates, one
 lands. Unlike carbon_intensity.py, landing here is append-only
@@ -176,12 +176,12 @@ def land_system_prices_data(df: pd.DataFrame) -> None:
     write once per date the way the pre-Delta file-per-landing version of
     this function had to. mode="append" never replaces or removes a row,
     so landing a settlement date that already has rows in the table adds
-    to it rather than overwriting it -- see the module docstring for why.
+    to it rather than overwriting it, see the module docstring for why.
 
     schema_mode="merge": a df with a column this table doesn't have yet
     still lands, backfilling NULL on every row already there, rather than
     raising SchemaMismatchError and forcing bronze to be dropped and
-    re-landed from the API to add a column -- see carbon_intensity.py's
+    re-landed from the API to add a column. See carbon_intensity.py's
     save_carbon_intensity_data() for where that was actually reached for
     and shouldn't have been, since this project documents bronze as the
     immutable record.
