@@ -1,5 +1,5 @@
 -- Gold dimension: wraps the seed_ci_fuel_type seed with a surrogate key,
--- the same pattern as dim_fuel_type.sql over seed_fuel_type -- see that
+-- the same pattern as dim_fuel_type.sql over seed_fuel_type. See that
 -- seed's own documentation for why this is a second, separate fuel
 -- taxonomy rather than a join target for dim_fuel_type.
 

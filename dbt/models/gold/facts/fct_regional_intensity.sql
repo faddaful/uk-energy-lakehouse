@@ -2,7 +2,7 @@
 -- silver_regional_intensity.
 --
 -- intensity_index is the API's own qualitative band, carried through
--- unchanged -- not derived from intensity_forecast_gco2_per_kwh here or
+-- unchanged, not derived from intensity_forecast_gco2_per_kwh here or
 -- anywhere downstream, since its numeric thresholds are not published
 -- anywhere this project found. The generation-mix percentage breakdown
 -- the API's regional endpoint also returns is deliberately NOT on this
@@ -20,7 +20,7 @@
 -- 7-day lookback, not 35 like the two Elexon facts: Carbon Intensity
 -- does not revise the way Elexon does (its bronze extractor overwrites
 -- each data_date in place, with no append-and-resolve history to catch
--- up on -- see README's "Why bronze never overwrites for Elexon").
+-- up on, see README's "Why bronze never overwrites for Elexon").
 -- Nothing here needs to be revisited once landed; the lookback exists
 -- for incremental build efficiency, not to catch late revisions.
 

@@ -12,7 +12,7 @@
 -- is deliberate, not a coincidence to be tidied away.
 --
 -- settlement_period_start_utc is Elexon's own startTime field, carried
--- through unchanged since staging -- it is a real UTC timestamp Elexon
+-- through unchanged since staging. It is a real UTC timestamp Elexon
 -- publishes, not something derived here from the settlement period
 -- number and a clock-change formula the way an earlier version of this
 -- plan assumed it would have to be. See the settlement_period_start_utc
@@ -58,7 +58,7 @@ final as (
         p.settlement_date,
         p.settlement_period,
 
-        -- The authoritative timestamp -- see model comment above
+        -- The authoritative timestamp, see model comment above
         p.start_time as settlement_period_start_utc,
 
         -- Measures

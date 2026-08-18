@@ -1,12 +1,12 @@
 -- Gold mart: one row per calendar day, shaped for a dashboard's daily
--- overview -- price, generation mix, and carbon intensity, plus a
+-- overview: price, generation mix, and carbon intensity, plus a
 -- completeness flag so a partial day (today, or a day still missing
 -- data) can be greyed out rather than plotted as if it were final.
 --
 -- intensity_daily filters to region_id = 8 (West Midlands), not 18
 -- (Great Britain): this pipeline's extractor only ever lands the one
--- region passed to it, and its default -- and the only region actually
--- ingested in practice so far -- is 8, not the GB-wide aggregate. Region
+-- region passed to it, and its default (and the only region actually
+-- ingested in practice so far) is 8, not the GB-wide aggregate. Region
 -- 18 has no rows in fct_regional_intensity at all, so filtering on it
 -- here would silently produce a NULL average intensity every day instead
 -- of a real one. See carbon_intensity.py's --region default.
@@ -89,7 +89,7 @@ select
 
     -- Completeness, so the dashboard can grey out partial days. Only
     -- correct because dim_date's settlement_periods_in_day already knows
-    -- about the two clock-change days -- an unconditional "= 48" check
+    -- about the two clock-change days. An unconditional "= 48" check
     -- here would wrongly flag every 46- and 50-period day as incomplete.
     p.periods_with_price = d.settlement_periods_in_day as is_price_complete
 

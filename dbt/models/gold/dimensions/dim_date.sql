@@ -9,7 +9,7 @@
 --     The 01:00-02:00 hour does not happen.
 --   - Last Sunday in October (clocks back, BST ends): 50 periods.
 --     The 01:00-02:00 hour happens twice.
--- (Not "49 or 50" -- that is a common mistake, corrected here on purpose.)
+-- (Not "49 or 50": that is a common mistake, corrected here on purpose.)
 --
 -- bst_start_date / bst_end_date compute "the last Sunday in March/
 -- October" by taking 31 March (or 31 October) and walking back to the

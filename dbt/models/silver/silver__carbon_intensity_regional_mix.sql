@@ -1,9 +1,9 @@
 -- Silver: one trustworthy row per half hour + region + fuel.
 -- Same dedup idiom as silver_regional_intensity.sql (newest loaded_at
--- wins per key) -- see that model's comment for why bronze can contain
+-- wins per key). See that model's comment for why bronze can contain
 -- more than one landing for the same key. Named with the double
 -- underscore this project's other silver models use, not the single
--- underscore silver_regional_intensity has -- see dbt_project.yml's
+-- underscore silver_regional_intensity has. See dbt_project.yml's
 -- silver_prefixes comment for why that one is a known, deliberately
 -- un-renamed inconsistency rather than a convention to keep matching.
 

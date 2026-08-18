@@ -2,7 +2,7 @@
 --
 -- Every settlement_date with a materially complete day of prices should
 -- have exactly as many distinct settlement periods as dim_date says that
--- calendar day is supposed to have -- 46 on the short clock-change day,
+-- calendar day is supposed to have: 46 on the short clock-change day,
 -- 50 on the long one, 48 otherwise. This is the test that would actually
 -- catch a clock-change bug in production, as opposed to
 -- assert_clock_change_day_period_counts.sql, which proves the
@@ -16,7 +16,7 @@
 -- fixture as a clock-change bug on every CI run. 40 is comfortably below
 -- 46, the lowest real period count a genuinely complete day ever has, so
 -- nothing that looks like real, complete production data gets excluded
--- by this floor -- only fixtures and days still mid-ingestion.
+-- by this floor: only fixtures and days still mid-ingestion.
 
 select
     a.settlement_date,

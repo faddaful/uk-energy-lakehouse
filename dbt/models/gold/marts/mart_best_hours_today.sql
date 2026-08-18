@@ -1,6 +1,6 @@
 -- Gold mart: the next 24 hours for one home region, ranked by
 -- greenness and (where known) cheapness. Shaped directly for the
--- Streamlit "when should I use electricity" view -- no aggregation logic
+-- Streamlit "when should I use electricity" view: no aggregation logic
 -- belongs in that app if this mart already has the answer.
 --
 -- home_region_id = 8 (West Midlands) matches carbon_intensity.py's own

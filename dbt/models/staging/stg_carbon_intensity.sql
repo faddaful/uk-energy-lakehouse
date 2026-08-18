@@ -1,10 +1,10 @@
--- Staging: read bronze (a Delta table, not plain parquet -- see README),
+-- Staging: read bronze (a Delta table, not plain parquet, see README),
 -- rename to clean names, cast types. No business logic here. One staging
 -- model per bronze source.
 --
 -- {{ bronze('carbon_intensity') }} resolves to a delta_scan() over either
 -- local disk or the Azure ADLS container, depending on the dbt target
--- (--target local|azure) -- see macros/bronze.sql and README. On the
+-- (--target local|azure), see macros/bronze.sql and README. On the
 -- local target it still reads its path from the carbon_intensity_path
 -- var, the same CI-fixture-override mechanism as before:
 --   local  -> real bronze data (the default)

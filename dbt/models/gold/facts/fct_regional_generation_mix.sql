@@ -9,14 +9,14 @@
 -- at settlement-period grain across 20 FUELHH codes; this one is a
 -- forecast-based, region-specific mix across the Carbon Intensity API's
 -- own coarser 9-fuel taxonomy (see seed_ci_fuel_type), and it carries a
--- percentage only -- the API does not publish MW for this breakdown, so
+-- percentage only: the API does not publish MW for this breakdown, so
 -- there is no generation_mw column here the way fct_generation has one.
 -- Joining the two mixes as if they were the same measure on two grains
 -- would silently compare numbers that do not mean the same thing.
 --
 -- 7-day lookback, matching fct_regional_intensity exactly, for the same
 -- reason: Carbon Intensity does not revise the way Elexon does, so
--- nothing here needs to be revisited once landed -- the lookback is for
+-- nothing here needs to be revisited once landed. The lookback is for
 -- incremental build efficiency only.
 
 {{

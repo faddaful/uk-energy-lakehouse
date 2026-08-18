@@ -5,7 +5,7 @@
 -- no matching dimension row silently disappears rather than erroring.
 -- This is the check that would actually catch that: if gold's row count
 -- ever drops below silver's, something dropped a row that should not
--- have been dropped -- most likely dim_date's spine not covering a real
+-- have been dropped, most likely dim_date's spine not covering a real
 -- settlement_date, or a settlement_period outside 1-50.
 
 with silver_count as (

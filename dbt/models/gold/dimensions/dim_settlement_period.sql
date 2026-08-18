@@ -10,7 +10,7 @@
 --    On the two clock-change days a year that mapping shifts (see
 --    dim_date.sql), so this column is never a substitute for a real
 --    timestamp. fct_settlement_period carries its own authoritative
---    timestamp (Elexon's own startTime, already UTC -- not derived from
+--    timestamp (Elexon's own startTime, already UTC, not derived from
 --    period arithmetic) for exactly this reason.
 --
 -- 2. is_peak_block is a DEFINED CONVENTION, not a fact. 07:00-19:00 is
@@ -26,7 +26,7 @@
 -- Periods 49 and 50 exist in this dimension every day, even though they
 -- only ever appear in a fact table on the one long clock-change day a
 -- year (see dim_date.settlement_periods_in_day). That is correct
--- behaviour for a conformed dimension, not a bug -- is_clock_change_only_
+-- behaviour for a conformed dimension, not a bug: is_clock_change_only_
 -- period makes it explicit rather than leaving it to be discovered.
 
 {{ config(materialized='table') }}

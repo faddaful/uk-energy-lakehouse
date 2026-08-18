@@ -11,7 +11,7 @@
 --
 -- Built on silver__price_revisions (prices only). This project also logs
 -- generation-by-fuel revisions (silver__generation_revisions) but they
--- are not part of this mart -- the headline story here is specifically
+-- are not part of this mart. The headline story here is specifically
 -- about prices, and generation revisions are a materially different
 -- question (measurement corrections, not a financial reassessment) that
 -- deserves its own mart if it turns out to be worth one, not a bolt-on.
