@@ -6,8 +6,11 @@ from dagster import MaterializeResult, MetadataValue, asset
 
 from lakehouse.extractors.carbon_intensity import (
     fetch_carbon_intensity_data,
+    fetch_regional_mix_data,
     land_carbon_intensity_data,
+    land_regional_mix_data,
     validate_carbon_intensity_data,
+    validate_regional_mix_data,
 )
 from lakehouse.extractors.elexon_generation_by_fuel import (
     fetch_generation_by_fuel_data,
@@ -57,6 +60,37 @@ def bronze_carbon_intensity() -> MaterializeResult:
     land_carbon_intensity_data(df)
 
     # Runtime metadata: evaluated on every run, visible per-run in the UI.
+    return MaterializeResult(
+        metadata={
+            "date": MetadataValue.text(run_date),
+            "region": MetadataValue.text(REGION_NAME),
+            "rows": MetadataValue.int(len(df)),
+        }
+    )
+
+
+@asset(
+    name="bronze_carbon_intensity_regional_mix",
+    description=(
+        "Fetch, validate and land today's regional generation mix in bronze -- the "
+        "generationmix array on the same regional intensity endpoint bronze_carbon_intensity "
+        "reads, exploded to one row per half hour + fuel. A separate asset, not folded into "
+        "bronze_carbon_intensity: one asset per bronze table is this project's convention "
+        "(see checks.py), and the two tables are two different grains from here on."
+    ),
+    metadata={"source": MetadataValue.text("carbon_intensity_api")},
+)
+def bronze_carbon_intensity_regional_mix() -> MaterializeResult:
+    run_date = today()
+    next_date = (datetime.date.fromisoformat(run_date) + datetime.timedelta(days=1)).isoformat()
+
+    df = fetch_regional_mix_data(start_date=run_date, end_date=next_date, region=REGION_ID)
+
+    if not validate_regional_mix_data(df):
+        raise ValueError(f"Invalid regional mix data for {run_date}")
+
+    land_regional_mix_data(df)
+
     return MaterializeResult(
         metadata={
             "date": MetadataValue.text(run_date),

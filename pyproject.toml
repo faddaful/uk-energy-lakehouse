@@ -17,9 +17,18 @@ dependencies = [
     "deltalake>=1.6.2",
     "duckdb>=1.5.5",
     "pandas>=3.0.5",
-    "pyarrow>=25.0.0",
+    "plotly>=6.9.0",
+    # Capped below 24: pyarrow 24/25 segfault inside Streamlit's dataframe
+    # serialisation the second time any script that calls st.dataframe (or
+    # st.plotly_chart, which hits the same path) reruns in one process --
+    # reproduced down to a two-line repro with no pandas/duckdb involved at
+    # all, and confirmed gone on every version from 20.0.0 through 23.0.1.
+    # Not a version anyone chose on purpose; revisit the cap once a
+    # pyarrow/Streamlit release fixes it upstream.
+    "pyarrow>=23.0.1,<24",
     "python-dotenv>=1.2.2",
     "requests>=2.34.2",
+    "streamlit>=1.59.1",
 ]
 
 [build-system]

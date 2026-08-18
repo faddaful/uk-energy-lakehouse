@@ -21,6 +21,19 @@ history with one call.
 Keep the raw shape: bronze stores what the API sent, plus columns for
 loaded_at and source. No cleaning is done here. Cleaning happens in
 silver, where it is visible and testable.
+
+Two bronze tables come out of the one regional endpoint, not one: every
+entry it returns carries an intensity forecast/index AND a generationmix
+array (checked directly against the live API before writing this, not
+assumed). intensity/index is one row per half hour + region, generationmix
+is naturally one row per half hour + region + fuel -- different grains, so
+they land as bronze/carbon_intensity and bronze/carbon_intensity_regional_mix
+rather than one table with a nested column forced flat. Carbon
+Intensity's own 9-fuel breakdown (solar and hydro included, no per-
+interconnector split) is a different taxonomy from Elexon's 20 FUELHH
+codes fct_generation is built on -- see seed_ci_fuel_type -- so this is
+genuinely a second, regional mix, not a more-detailed version of the
+first.
 """
 import argparse
 import datetime
@@ -65,6 +78,7 @@ def fetch_carbon_intensity_data(start_date: str, end_date: str, region: str) -> 
             'to': entry['to'],
             'intensity_actual': entry['intensity'].get('actual'),
             'intensity_forecast': entry['intensity']['forecast'],
+            'intensity_index': entry['intensity'].get('index'),
             'region_id': region,
             'loaded_at': datetime.datetime.now(tz=datetime.UTC).isoformat(),
             'source': 'carbon_intensity_api'
@@ -97,7 +111,7 @@ def validate_carbon_intensity_data(df: pd.DataFrame) -> bool:
         logger.warning("DataFrame is empty")
         return False
 
-    required_columns = ['data_date', 'from', 'to', 'intensity_actual', 'intensity_forecast', 'region_id', 'loaded_at', 'source']
+    required_columns = ['data_date', 'from', 'to', 'intensity_actual', 'intensity_forecast', 'intensity_index', 'region_id', 'loaded_at', 'source']
     for col in required_columns:
         if col not in df.columns:
             logger.error(f"Missing required column: {col}")
@@ -148,6 +162,117 @@ def land_carbon_intensity_data(df: pd.DataFrame) -> None:
     for data_date, group in df.groupby("data_date"):
         save_carbon_intensity_data(group.reset_index(drop=True), str(data_date))
 
+
+def fetch_regional_mix_data(start_date: str, end_date: str, region: str) -> pd.DataFrame:
+    """
+    Fetch the regional generation mix (% per fuel) for every half hour in a
+    date range -- the generationmix array on the same regional intensity
+    endpoint fetch_carbon_intensity_data() calls, exploded to one row per
+    half hour + fuel rather than left as a nested column.
+
+    A second request to the same URL, not a shared fetch with
+    fetch_carbon_intensity_data(): this endpoint has no documented rate
+    limit and gets called on a 30-minute schedule (see
+    elexon_common.py's REQUEST_DELAY_SECONDS for where request-count
+    courtesy actually matters, at a far higher call volume than this).
+    Keeping the two fetch functions independent, each with its own request,
+    matches how the two Elexon sources are already two separate modules
+    rather than a shared fetch split after the fact.
+
+    Args:
+        start_date (str): The start date in 'YYYY-MM-DD' format.
+        end_date (str): The end date in 'YYYY-MM-DD' format.
+        region (str): The region for which to fetch generation mix data.
+    """
+    url = f"https://api.carbonintensity.org.uk/regional/intensity/{start_date}/{end_date}/regionid/{region}"
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        logger.error(f"Failed to fetch data: {response.status_code} - {response.text}")
+        return pd.DataFrame()
+
+    data = response.json()
+    if 'data' not in data or 'data' not in data['data']:
+        logger.error("Unexpected response structure")
+        return pd.DataFrame()
+
+    loaded_at = datetime.datetime.now(tz=datetime.UTC).isoformat()
+    records = []
+    for entry in data['data']['data']:
+        for fuel_entry in entry.get('generationmix', []):
+            records.append({
+                'data_date': entry['from'][:10],
+                'from': entry['from'],
+                'to': entry['to'],
+                'region_id': region,
+                'fuel': fuel_entry['fuel'],
+                'perc': fuel_entry['perc'],
+                'loaded_at': loaded_at,
+                'source': 'carbon_intensity_api',
+            })
+
+    return pd.DataFrame(records)
+
+
+def validate_regional_mix_data(df: pd.DataFrame) -> bool:
+    """
+    Validate the fetched regional generation mix data.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing regional mix data.
+
+    Returns:
+        bool: True if the data is valid, False otherwise.
+    """
+    if df.empty:
+        logger.warning("DataFrame is empty")
+        return False
+
+    required_columns = ['data_date', 'from', 'to', 'region_id', 'fuel', 'perc', 'loaded_at', 'source']
+    for col in required_columns:
+        if col not in df.columns:
+            logger.error(f"Missing required column: {col}")
+            return False
+
+    return True
+
+
+def save_regional_mix_data(df: pd.DataFrame, date: str) -> None:
+    """
+    Land one data_date's rows into the bronze Delta table, same
+    partition-scoped overwrite as save_carbon_intensity_data() and for the
+    same reason -- see that function's docstring.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing regional mix data for
+            exactly one data_date.
+        date (str): The data_date being landed, in 'YYYY-MM-DD' format.
+    """
+    write_deltalake(
+        table_uri("bronze", "carbon_intensity_regional_mix"),
+        df,
+        mode="overwrite",
+        predicate=f"data_date = '{date}'",
+        partition_by=["data_date"],
+        storage_options=storage_options(),
+    )
+    logger.info(f"Landed {len(df)} regional mix rows for data_date={date}")
+
+
+def land_regional_mix_data(df: pd.DataFrame) -> None:
+    """
+    Split a fetched, validated DataFrame by data_date and land each date's
+    rows as its own partition-scoped overwrite -- same reason as
+    land_carbon_intensity_data().
+
+    Args:
+        df (pd.DataFrame): Fetched, already-validated regional mix data,
+            possibly spanning more than one data_date.
+    """
+    for data_date, group in df.groupby("data_date"):
+        save_regional_mix_data(group.reset_index(drop=True), str(data_date))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Fetch, validate, and save UK Carbon Intensity regional data."
@@ -172,6 +297,10 @@ def main() -> None:
     df = fetch_carbon_intensity_data(start_date, end_date, args.region)
     if validate_carbon_intensity_data(df):
         land_carbon_intensity_data(df)
+
+    mix_df = fetch_regional_mix_data(start_date, end_date, args.region)
+    if validate_regional_mix_data(mix_df):
+        land_regional_mix_data(mix_df)
 
 
 if __name__ == "__main__":

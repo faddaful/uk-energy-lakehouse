@@ -26,6 +26,7 @@ select
     cast(region_id as integer)           as region_id,
     cast(intensity_forecast as integer)  as intensity_forecast,
     cast(intensity_actual as integer)    as intensity_actual,
+    intensity_index,
     cast(loaded_at as timestamp)         as loaded_at,
     source
 from {{ bronze('carbon_intensity') }}

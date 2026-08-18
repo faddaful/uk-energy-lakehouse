@@ -10,7 +10,7 @@ Phase 1 is complete: a scheduled pipeline lands regional carbon intensity data e
 
 Phase 2 is complete. Elexon ingestion and revision resolution are done for both system prices and generation by fuel type: bronze lands every settlement date, a weekly Dagster job re-downloads the trailing 28 days to catch anything that changes, and silver resolves each natural key to one trustworthy value with a full audit trail of every change observed. Bronze is Delta Lake, not plain parquet, and storage can point at either a local disk or a real Azure ADLS Gen2 account (provisioned by Terraform) via one environment variable.
 
-Phase 3's gold layer is complete: four dimensions, three incremental facts, and three dashboard-shaped marts, all materialised as DuckDB tables and covered by schema tests, singular reconciliation tests, and dbt unit tests. See [The gold layer](#the-gold-layer) below for the design decisions, including a public dbt docs lineage graph. Power BI and the personal Streamlit dashboard are still open — see the roadmap below.
+Phase 3 is complete: a dimensional gold layer (four dimensions, three incremental facts, three dashboard-shaped marts), a personal Streamlit dashboard reading straight from it, and published dbt docs. Power BI was dropped from the plan in favour of Streamlit alone — one dashboard, kept genuinely useful, beats two built to tick a box. See [The gold layer](#the-gold-layer) below for the gold-layer design decisions and [Dashboard](#dashboard) for how the app is run and reached from a phone.
 
 ## Architecture
 
@@ -20,7 +20,7 @@ Data flows from open APIs through Python extractors into a bronze, silver, gold 
 
 ## What works today
 
-- Idempotent Python extractor for the Carbon Intensity API, landing bronze as a Delta table, one partition-scoped overwrite per data_date.
+- Idempotent Python extractor for the Carbon Intensity API, landing bronze as two Delta tables from one endpoint call (intensity + index, and a per-fuel regional generation mix — a different, coarser 9-fuel taxonomy from Elexon's), one partition-scoped overwrite per data_date each.
 - Python extractors for Elexon system prices and generation by fuel type, at settlement-period grain, correctly handling the 46/50-period clock-change days (computed from the timezone database, not hardcoded). No API key needed; both are good citizens of the public API with a descriptive User-Agent, rate limiting, and backoff on errors.
 - Elexon revision resolution, for both system prices and generation by fuel type: bronze is append-only for both (see [Why bronze never overwrites for Elexon](#why-bronze-never-overwrites-for-elexon) below), a weekly Dagster job re-downloads the trailing 28 days for each, and an incremental silver model resolves each natural key (settlement_date + settlement_period for prices; settlement_date + settlement_period + fuel_type for generation, since one row there is one fuel type within one period) to its latest-seen value, with a full audit table logging every change ever observed.
 - Storage on Delta Lake, locally or on Azure ADLS Gen2 behind one `TARGET` switch (see [Local vs Azure storage](#local-vs-azure-storage) below) — atomic writes, a real transaction log, and time travel to query bronze as it stood before a revision landed.
@@ -29,19 +29,20 @@ Data flows from open APIs through Python extractors into a bronze, silver, gold 
 - dbt transformations on DuckDB: staging models that read bronze Delta tables via `delta_scan()`, type and clean the raw data, and silver models that resolve each source to one trustworthy row per natural key.
 - Data quality: dbt tests (not null, uniqueness of a column combination, accepted values, range checks via dbt-expectations, and custom tests asserting resolved values trace back to a real bronze row and that revision counts stay sane) covering the models. Dedicated pytests also exercise the revision-resolution SQL idiom directly against synthetic data for both Elexon sources, independent of dbt.
 - Continuous integration: GitHub Actions runs linting, unit tests, and a full dbt build against committed sample fixtures — small Delta tables, not flat parquet files, including a synthetic revision scenario for each Elexon source — on every push and pull request.
-- A dimensional gold layer: four dimensions (`dim_date`, `dim_settlement_period`, `dim_region`, `dim_fuel_type`), three incremental facts (`fct_settlement_period`, `fct_generation`, `fct_regional_intensity`), and three dashboard-shaped marts, all materialised as tables inside the same DuckDB file silver already lives in. Correctly handles the 46/50-period clock-change days end to end, not just at ingestion — see [The gold layer](#the-gold-layer) below.
+- A dimensional gold layer: five dimensions (`dim_date`, `dim_settlement_period`, `dim_region`, `dim_fuel_type`, `dim_ci_fuel_type`), four incremental facts (`fct_settlement_period`, `fct_generation`, `fct_regional_intensity`, `fct_regional_generation_mix`), and three dashboard-shaped marts, all materialised as tables inside the same DuckDB file silver already lives in. Correctly handles the 46/50-period clock-change days end to end, not just at ingestion — see [The gold layer](#the-gold-layer) below.
 - Published dbt docs: a public lineage graph and column-level catalog, built from committed fixtures (no Azure credentials needed) and deployed to GitHub Pages on every push to `main`.
 - Self-audited with `dbt_project_evaluator`: DAG shape, naming, folder structure, and test/documentation coverage, configured for this project's actual staging/silver/gold layering rather than left on the package's default assumptions. Every finding is either fixed, or documented as a deliberate exception with real reasoning, or left visibly open as a genuine gap — see [Auditing the project](#auditing-the-project) below.
+- A personal Streamlit dashboard reading straight from gold, startable on demand from Dagster, reachable from a phone over Tailscale — see [Dashboard](#dashboard) below.
 
 ## Tech stack
 
-Python, Dagster (orchestration), Delta Lake with DuckDB's `delta` extension (storage and query), dbt with DuckDB (transformation, gold-layer dimensional modelling, and testing), Azure ADLS Gen2 with Terraform (cloud storage and infrastructure as code), GitHub Actions (CI and dbt docs publishing), uv (packaging and environments). Power BI and Streamlit are the remaining Phase 3 piece.
+Python, Dagster (orchestration), Delta Lake with DuckDB's `delta` extension (storage and query), dbt with DuckDB (transformation, gold-layer dimensional modelling, and testing), Streamlit with Plotly (dashboard), Azure ADLS Gen2 with Terraform (cloud storage and infrastructure as code), GitHub Actions (CI and dbt docs publishing), uv (packaging and environments).
 
 ## Data sources
 
 All free and public.
 
-- Carbon Intensity API: regional generation mix and carbon intensity, half-hourly with a 48-hour forecast. In use now.
+- Carbon Intensity API: regional generation mix and carbon intensity (forecast, gCO2/kWh, and the API's own qualitative band), half-hourly with a 48-hour forecast. In use now.
 - Elexon Insights (BMRS): wholesale prices, generation by fuel type, balancing. Public, no key required. Phase 2.
 - NESO Data Portal: demand forecasts, interconnector flows, and the transmission connections queue. Later phases.
 
@@ -68,7 +69,7 @@ The practical upshot: both endpoints appear to reflect only the fast initial set
 
 ## The gold layer
 
-Four dimensions, three incremental facts, three marts, all in `dbt/models/gold/`, all materialised as DuckDB tables inside the same file silver already lives in — gold is derived and cheap to rebuild, so there is no reason to write it back out to ADLS. Getting it to a dashboard is a separate export step (a later Dagster asset reading these tables), not a materialisation choice. `+schema: gold` puts them in their own schema in the catalog (`main_gold`); staging and silver stay unscoped in `main`, where Phase 1/2 already built them.
+Five dimensions, four incremental facts, three marts, all in `dbt/models/gold/`, all materialised as DuckDB tables inside the same file silver already lives in — gold is derived and cheap to rebuild, so there is no reason to write it back out to ADLS. The Streamlit dashboard reads this same file directly (see [Dashboard](#dashboard) below); a separate export step only becomes necessary the day a consumer can't reach this file itself, e.g. a publicly hosted dashboard. `+schema: gold` puts them in their own schema in the catalog (`main_gold`); staging and silver stay unscoped in `main`, where Phase 1/2 already built them.
 
 **Settlement periods are numbered in local clock time, not UTC, so two days a year don't have 48.** The last Sunday in March (clocks forward, the 01:00-02:00 hour doesn't happen) has **46**. The last Sunday in October (clocks back, that hour happens twice) has **50**. Not "49 or 50" — a mistake worth correcting explicitly, since it's an easy one to repeat. `dim_date.settlement_periods_in_day` carries the right number for every day, computed by walking back from 31 March/October to the preceding Sunday and verified against the real 2026 BST dates (29 March, 25 October) before being trusted. Two tests check it: `tests/assert_clock_change_day_period_counts.sql` checks dim_date's entire deterministic date range on every build (it doesn't need a real clock-change day to have passed through the pipeline — dim_date depends on nothing but today's date and a static seed), and `tests/assert_period_count_matches_calendar.sql` checks real ingested data once it has a materially complete day to check.
 
@@ -80,7 +81,19 @@ Four dimensions, three incremental facts, three marts, all in `dbt/models/gold/`
 
 `uk_bank_holidays` (England & Wales, Scotland, Northern Ireland, 2023-2028) comes from the gov.uk bank holidays API, the canonical source. Only England & Wales feeds `dim_date.is_working_day` today.
 
+**`fct_regional_generation_mix` and `intensity_index` closed a gap this layer originally shipped with.** The regional Carbon Intensity endpoint returns both a `generationmix` breakdown and a qualitative `index` label (e.g. "low", "moderate") on every call — checked directly against the live API, not assumed — but the extractor originally only kept `intensity.forecast`/`intensity.actual`/`region_id`. Both are now landed: `index` as a new column carried through `fct_regional_intensity` unchanged (its numeric thresholds are not published anywhere this project found, so it is never recomputed, only passed through), and `generationmix` as its own bronze table and fact, `fct_regional_generation_mix`, one row per half hour + region + fuel. That fact is deliberately not merged into `fct_generation`: the Carbon Intensity API's own 9-fuel taxonomy (`seed_ci_fuel_type` — notably including solar, which Elexon's transmission-metered FUELHH does not) is a different, coarser classification from Elexon's 20 FUELHH codes, on a different grain (regional forecast percentage, not GB-wide metered MW), so the two mixes are never joined to each other.
+
+`bronze_carbon_intensity_regional_mix` lands from a second request to the same endpoint `bronze_carbon_intensity` calls, not a shared fetch — the endpoint has no documented rate limit, and one extra call every 30 minutes is negligible next to Elexon's courtesy throttling (see `elexon_common.py`), so keeping the two fetch functions independent was simpler than restructuring both around a shared raw response.
+
 Every gold model and non-obvious column has a description; run `cd dbt && uv run dbt docs generate --static` to build the lineage graph and column catalog locally, or browse the published version at **[faddaful.github.io/uk-energy-lakehouse](https://faddaful.github.io/uk-energy-lakehouse/)** — built from committed fixtures on every push to `main` (`.github/workflows/docs.yml`), no Azure credentials needed, same principle as CI's own build job.
+
+## Dashboard
+
+`apps/streamlit/dashboard.py`: five tabs — how green your home region's electricity is right now and over the visible forecast (the API's own index band, plus the true regional fuel mix behind it, from `fct_regional_generation_mix`), the greenest (and, where a settled price exists, cheapest) hours in the next 24 hours from `mart_best_hours_today`, GB's whole-transmission-system generation mix with a date/period drill-down, recent price events (negative prices and large half-hour-on-half-hour swings) with an event-type filter, and a placeholder for the Phase 5 tariff comparison. It opens a read-only connection straight to the DuckDB file dbt already builds — no export step, no separate data path to keep in sync.
+
+Run it with `make streamlit` (or `uv run streamlit run apps/streamlit/dashboard.py --server.address 0.0.0.0`), then open it from your phone over Tailscale, the same way as any other self-hosted dashboard: `http://<tailscale-ip>:8501`. It can also be started on demand from the Dagster UI — `streamlit_dashboard_job` launches it as a detached background process and no-ops if it's already running.
+
+Runs entirely on the local network by design, same as a bank dashboard: this is personal financial-adjacent data, not something to put on the open internet. Streamlit Community Cloud is a genuine free option if a public, portfolio-facing version is ever wanted instead — but that needs the gold marts published somewhere Streamlit's servers can reach (small parquet snapshots committed by CI, in the spirit of `.github/workflows/docs.yml`), not this DuckDB file or any Azure credential. Standing up Azure App Service or Container Apps for this instead was considered and rejected: real operational surface (a container build, a registry, ingress rules to get right) for a dashboard whose only intended audience is one phone on Tailscale.
 
 ## Auditing the project
 
@@ -169,6 +182,10 @@ make dev
 
 # build and test the transformations
 make dbt-build
+
+# view it
+make streamlit
+# then open http://localhost:8501
 ```
 
 To land against the real Azure storage account instead of local disk, `export TARGET=azure` (or set it in `.env`) before running an extractor -- see [Local vs Azure storage](#local-vs-azure-storage) above. `az login` needs to be current; nothing else changes.
@@ -180,7 +197,7 @@ If `uv run python -m lakehouse...` fails with `ModuleNotFoundError: No module na
 ## Roadmap
 
 - Phase 2 remaining: a `make teardown` target to `terraform destroy` on demand; and once a real Elexon revision has actually been captured in the wild (not just the synthetic fixture scenario), a small script showing the same settlement period at two Delta table versions with different prices, using Delta's time travel -- the actual "my pipeline noticed the official price changed" demo.
-- Phase 3 remaining: a Dagster asset that exports the three gold marts to `public-data/` and/or ADLS for a dashboard to read; a Power BI dashboard; a personal Streamlit dashboard reachable on mobile; and the one open finding from [Auditing the project](#auditing-the-project) -- turning `macros/bronze.sql` into real dbt `source()` definitions so bronze actually appears in the DAG and the published lineage graph, instead of being a literal `delta_scan()` path string dbt can't see.
+- Phase 3 remaining: the one open finding from [Auditing the project](#auditing-the-project) -- turning `macros/bronze.sql` into real dbt `source()` definitions so bronze actually appears in the DAG and the published lineage graph, instead of being a literal `delta_scan()` path string dbt can't see. (Power BI was dropped from the plan in favour of Streamlit alone; see [Status](#status).)
 - Phase 4 and uniqueness layer: NESO demand forecast accuracy, a connections-queue observatory built on the public TEC register, published analysis of price revisions, a small public data product, and a personal dynamic-tariff cost comparison.
 
 ## Notes

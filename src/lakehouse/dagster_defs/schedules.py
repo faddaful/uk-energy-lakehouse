@@ -14,6 +14,23 @@ bronze_carbon_intensity_schedule = ScheduleDefinition(
     execution_timezone="UTC",
 )
 
+bronze_carbon_intensity_regional_mix_job = define_asset_job(
+    name="bronze_carbon_intensity_regional_mix_job",
+    selection=AssetSelection.assets("bronze_carbon_intensity_regional_mix"),
+    description="Fetch and land the latest regional generation mix.",
+)
+
+# Same 30-minute cadence as bronze_carbon_intensity, not staggered like the
+# weekly Elexon sweeps below: this is a second, independent request to the
+# same live endpoint (see carbon_intensity.py's fetch_regional_mix_data
+# docstring for why it isn't shared with the intensity fetch), so there is
+# no shared resource for the two schedules to contend over.
+bronze_carbon_intensity_regional_mix_schedule = ScheduleDefinition(
+    job=bronze_carbon_intensity_regional_mix_job,
+    cron_schedule="*/30 * * * *",
+    execution_timezone="UTC",
+)
+
 bronze_elexon_system_prices_job = define_asset_job(
     name="bronze_elexon_system_prices_job",
     selection=AssetSelection.assets("bronze_elexon_system_prices"),

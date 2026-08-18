@@ -1,0 +1,35 @@
+# Tests for the staging model. Filename: stg_carbon_intensity_regional_mix.yml,
+# sits next to the .sql file in models/staging/.
+
+version: 2
+
+models:
+  - name: stg_carbon_intensity_regional_mix
+    description: >
+      Bronze regional generation mix, typed and renamed. One row per half
+      hour + region + fuel. May contain duplicates per half hour + fuel;
+      deduplication happens in silver.
+    columns:
+      - name: valid_from
+        description: Start of the half-hour window (UTC).
+        tests:
+          - not_null
+      - name: region_id
+        description: Carbon Intensity API region ID (1 to 18).
+        tests:
+          - not_null
+      - name: ci_fuel_code
+        description: >
+          The Carbon Intensity API's own fuel label (e.g. "gas", "wind",
+          "imports") -- a different, coarser taxonomy from Elexon's 20
+          FUELHH codes. See seed_ci_fuel_type.
+        tests:
+          - not_null
+      - name: mix_pct
+        description: This fuel's share of the region's generation mix, 0-100.
+        tests:
+          - not_null
+      - name: loaded_at
+        description: When the extractor landed this row.
+        tests:
+          - not_null

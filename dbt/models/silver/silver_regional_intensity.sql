@@ -26,6 +26,7 @@ select
     region_id,
     intensity_forecast,
     intensity_actual,
+    intensity_index,
     loaded_at
 from ranked
 where row_num = 1

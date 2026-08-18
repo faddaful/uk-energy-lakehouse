@@ -1,19 +1,15 @@
 -- Gold fact: one row per half hour + region, built on
 -- silver_regional_intensity.
 --
--- Only carries what the extractor actually lands: half-hour window,
--- region, forecast intensity, and the (always-NULL-by-design) actual
--- intensity. The companion guide this project follows assumed a
--- generation-mix percentage breakdown (pct_gas, pct_coal, ... ) and an
--- intensity_index column on this fact -- checked against
--- carbon_intensity.py before writing this model, not assumed, and
--- neither is in the record the extractor builds. The Carbon Intensity
--- API's regional endpoint does return a mix breakdown and an index in
--- its raw response, but this project's extractor only ever parsed out
--- from/to/intensity.actual/intensity.forecast/region_id (see
--- fetch_carbon_intensity_data), so there is nothing further downstream
--- to carry through. Adding the mix/index fields is a bronze-and-up
--- change, not something gold can conjure from data that was never kept.
+-- intensity_index is the API's own qualitative band, carried through
+-- unchanged -- not derived from intensity_forecast_gco2_per_kwh here or
+-- anywhere downstream, since its numeric thresholds are not published
+-- anywhere this project found. The generation-mix percentage breakdown
+-- the API's regional endpoint also returns is deliberately NOT on this
+-- fact: it is a different grain (one row per half hour + region + fuel,
+-- not one row per half hour + region), so it lives in its own fact,
+-- fct_regional_generation_mix, the same way fct_generation is a
+-- separate fact from fct_settlement_period rather than a wide table.
 --
 -- intensity_actual_gco2_per_kwh is kept, not dropped, even though it is
 -- NULL for every row today: the regional Carbon Intensity endpoint is
@@ -62,6 +58,7 @@ select
     -- Forecast only: the regional endpoint does not publish actuals.
     i.intensity_forecast as intensity_forecast_gco2_per_kwh,
     i.intensity_actual   as intensity_actual_gco2_per_kwh,
+    i.intensity_index,
 
     i.loaded_at
 

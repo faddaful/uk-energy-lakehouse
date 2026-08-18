@@ -55,12 +55,12 @@ jobs:
       - name: dbt seed (fixtures)
         working-directory: dbt
         run: |
-          uv run dbt seed --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel}'
+          uv run dbt seed --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel}'
 
       - name: dbt run (fixtures)
         working-directory: dbt
         run: |
-          uv run dbt run --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel}'
+          uv run dbt run --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel}'
 
       - name: dbt docs generate
         working-directory: dbt

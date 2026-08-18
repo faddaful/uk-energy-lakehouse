@@ -2,6 +2,11 @@ dev:
 	chflags nohidden .venv/lib/python3.12/site-packages/*.pth 2>/dev/null || true
 	PYTHONPATH=$(PWD)/src DAGSTER_HOME=$(PWD)/.dagster_home uv run dagster dev -p 3001
 
+# --server.address 0.0.0.0, not the default localhost-only bind: this needs
+# to be reachable over Tailscale from your phone, not just from this laptop.
+streamlit:
+	uv run streamlit run apps/streamlit/dashboard.py --server.address 0.0.0.0
+
 # dbt must be run with the dbt/ folder as the working directory: profiles.yml
 # lives there instead of ~/.dbt, and its `path: ../data/lakehouse.duckdb`
 # resolves relative to whatever directory the shell was in when dbt started,
