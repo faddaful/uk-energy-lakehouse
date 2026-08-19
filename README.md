@@ -16,6 +16,8 @@ Phase 4, first piece, is complete: the connections queue observatory. NESO's TEC
 
 Phase 4, second piece, is complete: the revision observatory goes public. `mart_revision_summary` now publishes itself: a monthly Dagster job renders it as a plain-English Markdown report and commits + pushes it to `reports/`, real repo automation running unattended, not a dry run. See [The revision observatory goes public](#the-revision-observatory-goes-public) below.
 
+Phase 4, third piece, is complete: the public data product. Two gold marts, exported as `greenest_hours_next_48h.json` and `latest_price_anomalies.json`, refreshed every 3 hours and served straight off GitHub Pages, no server, no auth, no uptime to own. See [The public data product](#the-public-data-product) below for the schema, the update cadence, and why it commits a new entry per refresh rather than amending, unlike the revision report.
+
 ## Architecture
 
 ![Architecture](images/uk-energy-lakehouse-architecture-current.png)
@@ -39,6 +41,7 @@ Data flows from open APIs through Python extractors into a bronze, silver, gold 
 - A personal Streamlit dashboard reading straight from gold, startable on demand from Dagster, reachable from a phone over Tailscale (see [Dashboard](#dashboard) below).
 - A connections queue observatory: a NESO TEC register extractor, landed twice weekly and turned into real row-level history by this project's first dbt snapshot, a periodic-snapshot gold fact and mart, and a Streamlit tab (queue size over time, technology mix, average connection year, month-on-month movement). See [The connections queue observatory](#the-connections-queue-observatory) below.
 - A self-publishing revision observatory: a monthly Dagster job renders `mart_revision_summary` as a plain-English `reports/revision-summary-YYYY-MM.md`, commits it, and pushes, no manual step. See [The revision observatory goes public](#the-revision-observatory-goes-public) below.
+- A public data product: `greenest_hours_next_48h.json` and `latest_price_anomalies.json`, refreshed every 3 hours and served off GitHub Pages, no server to run. See [The public data product](#the-public-data-product) below.
 
 ## Tech stack
 
@@ -118,6 +121,68 @@ The Streamlit tab (see [Dashboard](#dashboard) below) is deliberately built to l
 Proved before trusting it, the same way everything else real repo-state-changing in this project has been: `commit_and_push_report()`'s git subprocess calls are exercised in `tests/test_revision_report_job.py` against a throwaway local repo with a real (throwaway, bare) remote, never this project's actual GitHub remote. Three things checked for real: a new report gets committed and actually reaches the remote (`origin/main`'s tip matches local `HEAD` after the push, not just "the command exited 0"), a second identical report adds no second commit, and a `None` report (nothing to report that month, the common case per `mart_revision_summary`'s own near-empty-most-months design, see [Why bronze never overwrites for Elexon](#why-bronze-never-overwrites-for-elexon)) is a clean no-op.
 
 **Does not trigger a dbt build first.** Nothing in this project schedules dbt through Dagster today; dbt runs by hand or in CI. The report reads whatever gold was last built with, the same limitation the Streamlit dashboard already has. Worth knowing, not hidden: if gold is stale when this job runs, the report will be stale too.
+
+## The public data product
+
+Two JSON files, served from GitHub Pages, no server to run and nothing to authenticate:
+
+- **`greenest_hours_next_48h.json`** — https://faddaful.github.io/uk-energy-lakehouse/api/greenest_hours_next_48h.json — the next 48 hours for the home region (West Midlands), ranked by forecast carbon intensity and, where a real settled price exists, by price.
+- **`latest_price_anomalies.json`** — https://faddaful.github.io/uk-energy-lakehouse/api/latest_price_anomalies.json — every settlement period in the last 30 days with a negative system sell price, or a swing of £50/MWh or more from the period immediately before.
+
+```bash
+curl -s https://faddaful.github.io/uk-energy-lakehouse/api/greenest_hours_next_48h.json | jq '.hours[0]'
+```
+
+**Schema.** Both files carry `schema_version` (an integer, bumped on any breaking shape change; nothing to consume without checking it first) and `generated_at` (UTC, `Z`-suffixed ISO 8601: when this specific JSON was written, not when gold was last built, see the cadence note below).
+
+`greenest_hours_next_48h.json`:
+```json
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-19T12:07:53Z",
+  "region": { "region_id": 8, "region_short_name": "West Midlands" },
+  "hours": [
+    {
+      "half_hour_start_utc": "2026-08-19T13:00:00Z",
+      "intensity_forecast_gco2_per_kwh": 72,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 3,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:05:05Z"
+    }
+  ]
+}
+```
+`system_sell_price_gbp_per_mwh` / `cheapness_rank` are `null` for almost every hour: imbalance prices are only known after a settlement period has actually happened, so there is no genuine forward price for most of the next 48 hours (same reasoning as `mart_best_hours_today`, see [The gold layer](#the-gold-layer) above). Not a bug, and not worth hiding behind a fake value.
+
+`latest_price_anomalies.json`:
+```json
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-19T12:07:53Z",
+  "window_days": 30,
+  "anomalies": [
+    {
+      "settlement_period_start_utc": "2026-08-19T09:00:00Z",
+      "system_sell_price_gbp_per_mwh": 112.62,
+      "price_change_gbp_per_mwh": -75.38,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:05:05Z"
+    }
+  ]
+}
+```
+`anomaly_type` is `"negative_price"` or `"large_swing"`.
+
+**Update cadence: every 3 hours** (`data_product_schedule`, `0 */3 * * *` UTC) — not the 30-minute cadence the underlying carbon intensity forecast actually updates on. That was a deliberate trade, not an oversight: every refresh that actually changes something is a new git commit (see below for why it can't be an amended one), and a 30-minute cadence would add up to 48 permanent commits a day to this repo's history for a JSON refresh, which is not a real historical record worth that cost. 3 hours balances "the product looks reasonably live" against "this repo's history doesn't fill up with bot commits." A re-run whose output is byte-identical to what's already committed (nothing changed since the last refresh) pushes nothing, so the real commit rate is normally lower than the schedule's own 8-times-a-day ceiling.
+
+**Same real repo automation as the revision report, one real design difference.** `revision_report_job` and `data_product_job` (`src/lakehouse/dagster_defs/reports.py` / `products.py`) share one git helper now (`dagster_defs/git_utils.py`, extracted once a second job needed the same commit/push logic, rather than copy-pasted a second time). Both commit + push for real, per the same explicit choice: a scheduled job changing what's on GitHub without a human in the loop that day, checked deliberately rather than defaulted into. But `data_product_job` was specifically **not** built to amend its previous commit and force-push, even though its output is pure derived state that arguably doesn't deserve permanent history the way a monthly revision report does. Amending assumes the previous commit on `main` is always this job's own last run, which stops being true the moment more than one automated committer (or a human) shares the branch — amending a commit that turns out to be a real revision-summary report, or a manual change, would silently fold unrelated work into one misleading commit. A new commit every real refresh is the only version of this that cannot corrupt someone else's history; the schedule, not git trickery, is what keeps the cost of that bounded.
+
+**Proved before trusting it, same bar as the revision report.** `commit_and_push_products()`'s git subprocess calls are exercised in `tests/test_data_product_job.py` against a throwaway local repo with a real (throwaway, bare) remote, never this project's actual GitHub remote: a real refresh commits both files and actually reaches the remote, a second identical refresh adds no second commit, and a change to only one of the two files still commits cleanly.
+
+**Real bugs caught before this ever touched a public URL, not assumed correct from the code reading right.** `lakehouse/products/api_export.py`'s `_clean()` exists because `DeltaTable`/DuckDB output is not directly JSON-safe, and every case here was confirmed against a real row pulled from gold, not assumed: `json.dumps()` raises outright on a bare `numpy.int32`/`int64` ("Object of type int32 is not JSON serializable"), and pandas' `NaN` survives `json.dumps()` as the literal token `NaN`, which most JSON parsers, including every browser's `JSON.parse`, reject outright as invalid. Worse, the two timestamp columns in these marts need two different fixes, not one: `half_hour_start_utc` comes back from DuckDB tz-naive despite its own name (needs `tz_localize`), while `generated_at` (from `current_timestamp`) comes back tz-aware in DuckDB's session-local zone, not UTC (needs `tz_convert`) — calling the wrong one on the wrong column raises. All of this is why the exported `gold_built_at` field exists under its own name rather than colliding with the payload's own top-level `generated_at`: the two are genuinely different moments, since this job (like the revision report) does not trigger a dbt build first, so hiding that gap behind one shared field name would be actively misleading, not just imprecise.
+
+**Stretch version, not built:** a small FastAPI app serving the same data from gold, deployed free-tier, was considered and left for later. The static-JSON version already meets the actual requirement (a documented, stable, auto-updating URL, no server to keep up) at zero hosting cost and zero uptime to own; a real API framework earns its place the day a consumer needs something static JSON genuinely can't do (query parameters, a non-GET verb, real-time push), not before.
 
 ## Dashboard
 
@@ -231,7 +296,7 @@ If `uv run python -m lakehouse...` fails with `ModuleNotFoundError: No module na
 
 - Phase 2 remaining: a `make teardown` target to `terraform destroy` on demand; and once a real Elexon revision has actually been captured in the wild (not just the synthetic fixture scenario), a small script showing the same settlement period at two Delta table versions with different prices, using Delta's time travel, the actual "my pipeline noticed the official price changed" demo.
 - Phase 3 remaining: the one open finding from [Auditing the project](#auditing-the-project): turning `macros/bronze.sql` into real dbt `source()` definitions so bronze actually appears in the DAG and the published lineage graph, instead of being a literal `delta_scan()` path string dbt can't see. (Power BI was dropped from the plan in favour of Streamlit alone; see [Status](#status).)
-- Phase 4 remaining: the connections queue observatory and the revision observatory going public are both done (see [The connections queue observatory](#the-connections-queue-observatory) and [The revision observatory goes public](#the-revision-observatory-goes-public) above); still open are NESO demand forecast accuracy, a small public data product built off gold, and a personal dynamic-tariff cost comparison.
+- Phase 4 remaining: the connections queue observatory, the revision observatory going public, and the public data product are all done (see [The connections queue observatory](#the-connections-queue-observatory), [The revision observatory goes public](#the-revision-observatory-goes-public), and [The public data product](#the-public-data-product) above); still open are NESO demand forecast accuracy and a personal dynamic-tariff cost comparison. The data product's FastAPI stretch version was deliberately left unbuilt too, see that section's own closing note for why.
 
 ## Notes
 

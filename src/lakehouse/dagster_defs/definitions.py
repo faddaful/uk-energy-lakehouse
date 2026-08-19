@@ -25,6 +25,7 @@ from lakehouse.dagster_defs.checks import (
     bronze_neso_connections_schema_check,
 )
 from lakehouse.dagster_defs.dashboard import streamlit_dashboard_job
+from lakehouse.dagster_defs.products import data_product_job
 from lakehouse.dagster_defs.reports import revision_report_job
 from lakehouse.dagster_defs.schedules import (
     bronze_carbon_intensity_job,
@@ -37,6 +38,7 @@ from lakehouse.dagster_defs.schedules import (
     bronze_elexon_system_prices_schedule,
     bronze_neso_connections_job,
     bronze_neso_connections_schedule,
+    data_product_schedule,
     revision_report_schedule,
 )
 
@@ -63,6 +65,7 @@ defs = Definitions(
         bronze_neso_connections_job,
         streamlit_dashboard_job,
         revision_report_job,
+        data_product_job,
     ],
     schedules=[
         bronze_carbon_intensity_schedule,
@@ -71,5 +74,6 @@ defs = Definitions(
         bronze_elexon_generation_by_fuel_schedule,
         bronze_neso_connections_schedule,
         revision_report_schedule,
+        data_product_schedule,
     ],
 )
