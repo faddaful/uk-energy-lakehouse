@@ -1,6 +1,10 @@
-"""Schedules: bronze carbon intensity every 30 minutes, Elexon revision sweeps weekly."""
+"""Schedules: bronze carbon intensity every 30 minutes, Elexon revision
+sweeps weekly, NESO connections twice weekly, the revision report
+monthly."""
 
 from dagster import AssetSelection, ScheduleDefinition, define_asset_job
+
+from lakehouse.dagster_defs.reports import revision_report_job
 
 bronze_carbon_intensity_job = define_asset_job(
     name="bronze_carbon_intensity_job",
@@ -75,5 +79,16 @@ bronze_neso_connections_job = define_asset_job(
 bronze_neso_connections_schedule = ScheduleDefinition(
     job=bronze_neso_connections_job,
     cron_schedule="0 12 * * 2,5",
+    execution_timezone="UTC",
+)
+
+# 1st of the month, comfortably after every other schedule on this list
+# and after `mart_revision_summary` for the month that just closed has
+# had days to settle: revision_report_job reports on the PREVIOUS month
+# (see revision_report.py's target_month()), so this does not need to
+# race the month rollover itself.
+revision_report_schedule = ScheduleDefinition(
+    job=revision_report_job,
+    cron_schedule="0 5 1 * *",
     execution_timezone="UTC",
 )

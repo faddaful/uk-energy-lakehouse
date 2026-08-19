@@ -14,6 +14,8 @@ Phase 3 is complete: a dimensional gold layer (four dimensions, three incrementa
 
 Phase 4, first piece, is complete: the connections queue observatory. NESO's TEC register only ever publishes its current state, twice a week, with no public history; this project now lands every publish and turns it into real row-level history with a dbt snapshot, this project's first. See [The connections queue observatory](#the-connections-queue-observatory) below for what the real data actually looks like and the design decisions that came out of checking it directly rather than assuming the plan's first draft.
 
+Phase 4, second piece, is complete: the revision observatory goes public. `mart_revision_summary` now publishes itself: a monthly Dagster job renders it as a plain-English Markdown report and commits + pushes it to `reports/`, real repo automation running unattended, not a dry run. See [The revision observatory goes public](#the-revision-observatory-goes-public) below.
+
 ## Architecture
 
 ![Architecture](images/uk-energy-lakehouse-architecture-current.png)
@@ -36,6 +38,7 @@ Data flows from open APIs through Python extractors into a bronze, silver, gold 
 - Self-audited with `dbt_project_evaluator`: DAG shape, naming, folder structure, and test/documentation coverage, configured for this project's actual staging/silver/gold layering rather than left on the package's default assumptions. Every finding is either fixed, or documented as a deliberate exception with real reasoning, or left visibly open as a genuine gap (see [Auditing the project](#auditing-the-project) below).
 - A personal Streamlit dashboard reading straight from gold, startable on demand from Dagster, reachable from a phone over Tailscale (see [Dashboard](#dashboard) below).
 - A connections queue observatory: a NESO TEC register extractor, landed twice weekly and turned into real row-level history by this project's first dbt snapshot, a periodic-snapshot gold fact and mart, and a Streamlit tab (queue size over time, technology mix, average connection year, month-on-month movement). See [The connections queue observatory](#the-connections-queue-observatory) below.
+- A self-publishing revision observatory: a monthly Dagster job renders `mart_revision_summary` as a plain-English `reports/revision-summary-YYYY-MM.md`, commits it, and pushes, no manual step. See [The revision observatory goes public](#the-revision-observatory-goes-public) below.
 
 ## Tech stack
 
@@ -105,6 +108,16 @@ The plan behind this piece assumed NESO's TEC register updates "roughly monthly.
 Gold turns that SCD history into a periodic snapshot fact, `fct_connection_queue` (one row per project tranche per `as_of_month`, "whichever snapshot version was open through the end of that month"), and a mart, `mart_queue_evolution` (queue size, capacity mix by technology, and `connection_date_slippage_days`: how far NESO's own published `MW Effective From` moved for a project between one monthly snapshot and the next). `primary_technology` (the first-listed token of NESO's own semicolon-delimited, multi-value `Plant Type` column) feeds a new dimension, `dim_technology`, over a new seed, `seed_neso_technology`: NESO's own field notes admit "capacity across stages and technology types is currently presented in aggregate," so attributing a row's whole MW to every listed technology would double-count it in any mix total, and attributing it to only the first-listed one is the honest choice given what the source actually provides.
 
 The Streamlit tab (see [Dashboard](#dashboard) below) is deliberately built to look sensible on one month of history and get richer on its own: queue size over time shows a real chart once there are two monthly snapshots to plot and a plain explanation until then, and month-on-month movement does the same. Nothing needs backfilling by hand; it fills in from the next Tuesday or Friday landing onward.
+
+## The revision observatory goes public
+
+`mart_revision_summary` (see [The gold layer](#the-gold-layer) above) already had the numbers; this piece is what makes them show up somewhere without a manual step. `revision_report_job` (`src/lakehouse/dagster_defs/reports.py`) runs on the 1st of each month, renders `reports/revision-summary-YYYY-MM.md` (`src/lakehouse/reports/revision_report.py`: mean and median revision size, biggest individual movers pulled straight from `silver__price_revisions`, share of periods revised), and commits + pushes it. It reports on the month that just closed, not the current one, so the numbers it publishes are never a moving target.
+
+**This is real repo automation, not a dry run: a scheduled job changes what's on GitHub without a human in the loop that day.** That was a deliberate choice, checked explicitly rather than defaulted into: the alternative (write the file, leave committing to a human) is safer but defeats the point of "goes public" being something that just happens. The op is written to fail loudly rather than silently if git ever does something unexpected (a non-zero exit from `commit` or `push` raises), and "nothing to commit" (a same-day re-run producing byte-identical content) is treated as a real, expected outcome, not an error, via `git diff --cached --quiet` before attempting a commit at all.
+
+Proved before trusting it, the same way everything else real repo-state-changing in this project has been: `commit_and_push_report()`'s git subprocess calls are exercised in `tests/test_revision_report_job.py` against a throwaway local repo with a real (throwaway, bare) remote, never this project's actual GitHub remote. Three things checked for real: a new report gets committed and actually reaches the remote (`origin/main`'s tip matches local `HEAD` after the push, not just "the command exited 0"), a second identical report adds no second commit, and a `None` report (nothing to report that month, the common case per `mart_revision_summary`'s own near-empty-most-months design, see [Why bronze never overwrites for Elexon](#why-bronze-never-overwrites-for-elexon)) is a clean no-op.
+
+**Does not trigger a dbt build first.** Nothing in this project schedules dbt through Dagster today; dbt runs by hand or in CI. The report reads whatever gold was last built with, the same limitation the Streamlit dashboard already has. Worth knowing, not hidden: if gold is stale when this job runs, the report will be stale too.
 
 ## Dashboard
 
@@ -218,7 +231,7 @@ If `uv run python -m lakehouse...` fails with `ModuleNotFoundError: No module na
 
 - Phase 2 remaining: a `make teardown` target to `terraform destroy` on demand; and once a real Elexon revision has actually been captured in the wild (not just the synthetic fixture scenario), a small script showing the same settlement period at two Delta table versions with different prices, using Delta's time travel, the actual "my pipeline noticed the official price changed" demo.
 - Phase 3 remaining: the one open finding from [Auditing the project](#auditing-the-project): turning `macros/bronze.sql` into real dbt `source()` definitions so bronze actually appears in the DAG and the published lineage graph, instead of being a literal `delta_scan()` path string dbt can't see. (Power BI was dropped from the plan in favour of Streamlit alone; see [Status](#status).)
-- Phase 4 remaining: the connections queue observatory itself is done (see [The connections queue observatory](#the-connections-queue-observatory) above); still open are NESO demand forecast accuracy, publishing `mart_revision_summary` as an automated monthly report, a small public data product built off gold, and a personal dynamic-tariff cost comparison.
+- Phase 4 remaining: the connections queue observatory and the revision observatory going public are both done (see [The connections queue observatory](#the-connections-queue-observatory) and [The revision observatory goes public](#the-revision-observatory-goes-public) above); still open are NESO demand forecast accuracy, a small public data product built off gold, and a personal dynamic-tariff cost comparison.
 
 ## Notes
 

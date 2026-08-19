@@ -48,19 +48,43 @@ jobs:
       - name: Create data directory for DuckDB
         run: mkdir -p data
 
-      # seed + run (not build): tests aren't needed to produce docs, and
-      # skipping them keeps this workflow from being a second place a
-      # data-quality failure can block a docs publish. CI's own build job
-      # is still what gates merges.
+      # seed + run + snapshot + run again (not build): tests aren't
+      # needed to produce docs, and skipping them keeps this workflow
+      # from being a second place a data-quality failure can block a
+      # docs publish. CI's own build job is still what gates merges.
+      #
+      # run appears twice, deliberately, not a copy-paste mistake:
+      # snapshot_connection_queue.sql selects from stg_neso_connections,
+      # a view `dbt run` creates, so snapshotting before the first run
+      # fails outright ("stg_neso_connections does not exist"). But
+      # fct_connection_queue and mart_queue_evolution both ref() the
+      # snapshot, so the first run, before the snapshot exists yet,
+      # fails on those two just as outright. `dbt build` sidesteps this
+      # by interleaving snapshots and models in one real DAG order; two
+      # separate top-level commands don't share that interleaving with
+      # each other, so the run has to happen twice, framing the
+      # snapshot in the middle: once to produce what the snapshot reads,
+      # once to produce what reads the snapshot. Both failure modes were
+      # hit for real, in this order, before landing on this sequence.
       - name: dbt seed (fixtures)
         working-directory: dbt
         run: |
-          uv run dbt seed --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel}'
+          uv run dbt seed --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel, neso_connections_path: ../tests/fixtures/neso_connections}'
 
       - name: dbt run (fixtures)
         working-directory: dbt
         run: |
-          uv run dbt run --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel}'
+          uv run dbt run --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel, neso_connections_path: ../tests/fixtures/neso_connections}' --exclude fct_connection_queue+
+
+      - name: dbt snapshot (fixtures)
+        working-directory: dbt
+        run: |
+          uv run dbt snapshot --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel, neso_connections_path: ../tests/fixtures/neso_connections}'
+
+      - name: dbt run, second pass, for models that depend on the snapshot (fixtures)
+        working-directory: dbt
+        run: |
+          uv run dbt run --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel, neso_connections_path: ../tests/fixtures/neso_connections}' --select fct_connection_queue+
 
       - name: dbt docs generate
         working-directory: dbt
