@@ -27,6 +27,11 @@ from lakehouse.extractors.neso_connections import (
     land_connections_data,
     validate_connections_data,
 )
+from lakehouse.extractors.octopus_agile import (
+    fetch_agile_prices,
+    land_agile_prices_data,
+    validate_agile_prices_data,
+)
 
 # Verify this ID in your browser first:
 # https://api.carbonintensity.org.uk/regional/regionid/8 -> check the "shortname"
@@ -192,6 +197,49 @@ def bronze_neso_connections() -> MaterializeResult:
     return MaterializeResult(
         metadata={
             "as_of_date": MetadataValue.text(str(df["as_of_date"].iloc[0])),
+            "rows": MetadataValue.int(len(df)),
+        }
+    )
+
+
+# Small defensive window, not a single day: Octopus publishes tomorrow's
+# rates once daily, but if a run is ever missed, this catches up on the
+# next run rather than leaving a permanent gap. Octopus does not revise
+# a published rate (see octopus_agile.py), so re-landing days already in
+# bronze is just a cheap no-op overwrite, not a real revision sweep the
+# way Elexon's REVISION_WINDOW_DAYS is.
+AGILE_TRAILING_DAYS = 2
+AGILE_FORWARD_DAYS = 2
+
+
+@asset(
+    name="bronze_octopus_agile_prices",
+    description=(
+        "Fetch, validate and land Octopus Agile's published half-hourly unit rates in "
+        "bronze, for the home region (West Midlands, see octopus_agile.py). Feeds "
+        "mart_tariff_comparison (see README's \"The money story\")."
+    ),
+    metadata={"source": MetadataValue.text("octopus_agile")},
+)
+def bronze_octopus_agile_prices() -> MaterializeResult:
+    start_date = (
+        datetime.datetime.now(tz=datetime.UTC).date() - datetime.timedelta(days=AGILE_TRAILING_DAYS)
+    ).isoformat()
+    end_date = (
+        datetime.datetime.now(tz=datetime.UTC).date() + datetime.timedelta(days=AGILE_FORWARD_DAYS)
+    ).isoformat()
+
+    df = fetch_agile_prices(start_date=start_date, end_date=end_date)
+
+    if not validate_agile_prices_data(df):
+        raise ValueError(f"Invalid Octopus Agile price data for {start_date} to {end_date}")
+
+    land_agile_prices_data(df)
+
+    return MaterializeResult(
+        metadata={
+            "start_date": MetadataValue.text(start_date),
+            "end_date": MetadataValue.text(end_date),
             "rows": MetadataValue.int(len(df)),
         }
     )

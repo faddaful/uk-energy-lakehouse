@@ -24,16 +24,25 @@
 -- ADJUST the column names on the left of each AS to match your actual
 -- schema. Open the table to check:
 --   uv run python -c "from deltalake import DeltaTable; print(DeltaTable('data/bronze/elexon_system_prices').to_pandas().dtypes)"
+--
+-- startTime/createdDateTime/loaded_at are TIMESTAMPTZ in bronze (landed
+-- from tz-aware pandas Timestamps), not plain TIMESTAMP: cast(col as
+-- timestamp) on one of those silently converts through the connecting
+-- session's own local TimeZone rather than UTC, a real bug found and
+-- fixed project-wide, see macros/utc_timestamp.sql for the full story
+-- (this is the exact model whose settlement_period_start_utc it was
+-- caught corrupting -- 7,378 real mismatched rows on this project's own
+-- dev machine, off by an hour during BST, before this was fixed).
 
 select
-    cast(settlementDate as date)         as settlement_date,
-    cast(settlementPeriod as integer)    as settlement_period,
-    cast(startTime as timestamp)         as start_time,
-    cast(createdDateTime as timestamp)   as created_date_time,
-    cast(systemSellPrice as double)      as system_sell_price,
-    cast(systemBuyPrice as double)       as system_buy_price,
-    priceDerivationCode                  as price_derivation_code,
-    cast(netImbalanceVolume as double)   as net_imbalance_volume,
-    cast(loaded_at as timestamp)         as loaded_at,
+    cast(settlementDate as date)            as settlement_date,
+    cast(settlementPeriod as integer)       as settlement_period,
+    {{ utc_timestamp('startTime') }}        as start_time,
+    {{ utc_timestamp('createdDateTime') }}  as created_date_time,
+    cast(systemSellPrice as double)         as system_sell_price,
+    cast(systemBuyPrice as double)          as system_buy_price,
+    priceDerivationCode                     as price_derivation_code,
+    cast(netImbalanceVolume as double)      as net_imbalance_volume,
+    {{ utc_timestamp('loaded_at') }}        as loaded_at,
     source
 from {{ bronze('elexon_system_prices') }}

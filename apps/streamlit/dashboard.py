@@ -514,12 +514,91 @@ def render_connections_queue() -> None:
             )
 
 
-def render_tariff_placeholder() -> None:
+def render_tariff_comparison() -> None:
+    df = run_query("select * from main_gold.mart_tariff_comparison order by period_start")
+    if df.empty:
+        st.info(
+            "No usage logged yet. Add a row to data/manual/electricity_usage.csv from your "
+            "supplier's own app (date range, day kWh, night kWh, estimated cost), then run "
+            "manual_usage_job from the Dagster UI. See lakehouse.extractors.manual_usage's "
+            "module docstring for the exact format."
+        )
+        return
+
+    st.write(
+        "Would Octopus Agile have cost less than what you actually paid, for the electricity "
+        "you actually used? Compared period by period, using whatever day/night totals you've "
+        "logged from your supplier's app, against Agile's real published half-hourly rates for "
+        "the same dates."
+    )
+    st.caption(
+        "A real approximation, not hidden: without half-hourly consumption, this assumes your "
+        "day-band usage was spread evenly across the period's day half hours (and the same for "
+        "night), the best a day/night split can support. It is not the same claim as \"every "
+        "half hour's actual usage times its actual price.\""
+    )
+
+    total_actual = df["actual_estimated_cost_gbp"].sum()
+    total_agile = df["agile_equivalent_cost_gbp"].sum(skipna=True)
+    total_savings = total_actual - total_agile if df["agile_equivalent_cost_gbp"].notna().all() else None
+
+    cols = st.columns(3)
+    cols[0].metric("Actual cost logged", f"£{total_actual:.2f}")
+    if pd.notna(total_agile) and df["agile_equivalent_cost_gbp"].notna().any():
+        cols[1].metric("Agile-equivalent cost", f"£{total_agile:.2f}")
+    else:
+        cols[1].metric("Agile-equivalent cost", "—")
+    if total_savings is not None:
+        label = "Agile would have saved" if total_savings > 0 else "Agile would have cost more"
+        cols[2].metric(label, f"£{abs(total_savings):.2f}", delta_color="off")
+    else:
+        cols[2].metric("Agile vs actual", "incomplete data")
+
+    if not df["is_complete"].all():
+        st.caption(
+            "One or more periods above have partial Agile price history (logged further back "
+            "than prices have been backfilled). Their numbers reflect only the coverage available, "
+            "not the whole period."
+        )
+
+    fig = px.bar(
+        df,
+        x=df["period_start"].astype(str) + " to " + df["period_end"].astype(str),
+        y=["actual_estimated_cost_gbp", "agile_equivalent_cost_gbp"],
+        barmode="group",
+        labels={"value": "£", "x": "", "variable": ""},
+    )
+    fig.for_each_trace(
+        lambda t: t.update(
+            name={"actual_estimated_cost_gbp": "Actual (your app)", "agile_equivalent_cost_gbp": "Agile-equivalent"}.get(
+                t.name, t.name
+            )
+        )
+    )
+    st.plotly_chart(fig, width="stretch")
+
+    st.dataframe(
+        df[
+            [
+                "period_start",
+                "period_end",
+                "day_kwh",
+                "night_kwh",
+                "actual_estimated_cost_gbp",
+                "agile_equivalent_cost_gbp",
+                "agile_savings_gbp",
+                "is_complete",
+            ]
+        ],
+        hide_index=True,
+    )
+
     st.info(
-        "Not built yet. A later phase joins your own half-hourly consumption "
-        "against Octopus Agile's day-ahead prices to answer: would Agile save "
-        "you money, and did following this dashboard's cheapest-hours advice "
-        "actually save anything this month? See the README roadmap."
+        "Not answered here: whether following this dashboard's own cheapest-hours advice "
+        "actually saved anything this month. That needs evidence of when you actually used "
+        "power, not just a daily or weekly total — this project has no half-hourly smart-meter "
+        "export to check that against (see README's \"The money story\"), so this stays an open "
+        "question rather than a number invented to fill the gap."
     )
 
 
@@ -538,7 +617,7 @@ def main() -> None:
             "GB generation mix",
             "Recent price events",
             "Connections queue",
-            "Tariff comparison",
+            "The money story",
         ]
     )
     with tabs[0]:
@@ -552,7 +631,7 @@ def main() -> None:
     with tabs[4]:
         render_connections_queue()
     with tabs[5]:
-        render_tariff_placeholder()
+        render_tariff_comparison()
 
 
 if __name__ == "__main__":

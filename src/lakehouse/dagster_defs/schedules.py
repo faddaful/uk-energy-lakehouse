@@ -107,3 +107,22 @@ data_product_schedule = ScheduleDefinition(
     cron_schedule="0 */3 * * *",
     execution_timezone="UTC",
 )
+
+bronze_octopus_agile_prices_job = define_asset_job(
+    name="bronze_octopus_agile_prices_job",
+    selection=AssetSelection.assets("bronze_octopus_agile_prices"),
+    description="Fetch and land the latest Octopus Agile half-hourly unit rates.",
+)
+
+# Daily, not half-hourly like the carbon intensity forecast: Octopus
+# publishes a whole day's rates in one go, once a day, typically mid-
+# afternoon UK time (a day-ahead auction result, not a rolling forecast
+# that revises through the day the way carbon intensity's does). 17:00
+# UTC is comfortably after that for every time of year (16:00-18:00
+# local depending on BST), catching that day's publish the same day
+# rather than waiting until tomorrow's run.
+bronze_octopus_agile_prices_schedule = ScheduleDefinition(
+    job=bronze_octopus_agile_prices_job,
+    cron_schedule="0 17 * * *",
+    execution_timezone="UTC",
+)

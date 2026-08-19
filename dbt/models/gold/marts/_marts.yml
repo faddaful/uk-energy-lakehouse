@@ -125,3 +125,31 @@ models:
       - name: generated_at
         description: When this mart was last built.
         tests: [not_null]
+
+  - name: mart_tariff_comparison
+    description: >
+      One row per hand-logged usage period: would Octopus Agile have
+      cost less than what you actually paid, for the electricity you
+      actually used. See the model comment for the real approximation
+      this makes (period-level day/night averages, not true half-hourly
+      consumption) and why estimated_cost_gbp, not a reconstruction of
+      your current tariff, is the baseline it compares against.
+    columns:
+      - name: period_start
+        tests: [not_null]
+      - name: period_end
+        tests: [not_null]
+      - name: agile_equivalent_cost_gbp
+        description: What the same day_kwh/night_kwh would have cost on Agile's average day/night rates for this period.
+      - name: agile_savings_gbp
+        description: actual_estimated_cost_gbp minus agile_equivalent_cost_gbp. Positive means Agile would have been cheaper.
+      - name: is_complete
+        description: >
+          False when Agile price history doesn't yet cover the whole
+          period (e.g. a period logged before prices were backfilled
+          that far back). A consumer should treat agile_equivalent_cost_gbp
+          as partial, not wrong, when this is false.
+        tests: [not_null]
+      - name: generated_at
+        description: When this mart was last built.
+        tests: [not_null]

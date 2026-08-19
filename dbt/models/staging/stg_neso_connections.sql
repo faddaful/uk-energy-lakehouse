@@ -56,7 +56,11 @@ with source as (
         cast("Project Number" as varchar)                       as project_number,
         cast(Gate as integer)                                   as gate,
         cast(as_of_date as date)                                as as_of_date,
-        cast(loaded_at as timestamp)                            as loaded_at,
+        -- loaded_at is TIMESTAMPTZ in bronze: cast(col as timestamp)
+        -- would silently convert through the session's local TimeZone
+        -- rather than UTC, a real bug found and fixed project-wide, see
+        -- macros/utc_timestamp.sql.
+        {{ utc_timestamp('loaded_at') }}                        as loaded_at,
         source
     from {{ bronze('neso_connections') }}
 

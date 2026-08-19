@@ -220,6 +220,46 @@ models:
                 min_value: 0
                 max_value: 100
 
+  - name: fct_agile_prices
+    description: >
+      One row per half hour, built on silver__agile_prices, with
+      rate_band (day/night) classified against this project's actual
+      Economy 7 window (00:30-07:30 local). See the model comment for
+      why that classification uses dim_date.is_bst plus interval
+      arithmetic rather than DuckDB's AT TIME ZONE / ::timestamptz,
+      and for the one accepted approximation this leaves (clock-change
+      nights, twice a year).
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - half_hour_start_utc
+    columns:
+      - name: agile_price_fact_key
+        description: Surrogate key, hashed from half_hour_start_utc.
+        tests: [not_null, unique]
+      - name: date_key
+        description: Foreign key to dim_date.date_key.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: unit_rate_inc_vat_p_per_kwh
+        description: >
+          Pence per kWh, VAT included. Genuinely negative on real days
+          (confirmed against real landed data before writing this test:
+          92 of 2,256 real half hours so far), not clamped to zero.
+        tests:
+          - not_null
+      - name: rate_band
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["day", "night"]
+
   - name: fct_connection_queue
     description: >
       Periodic snapshot fact: one row per project tranche
