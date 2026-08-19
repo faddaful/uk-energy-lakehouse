@@ -25,13 +25,19 @@
 -- delta extension that provides it is loaded on every connection via
 -- profiles.yml.
 
+-- startTime/publishTime/loaded_at are TIMESTAMPTZ in bronze (landed
+-- from tz-aware pandas Timestamps), not plain TIMESTAMP: cast(col as
+-- timestamp) on one of those silently converts through the connecting
+-- session's own local TimeZone rather than UTC, a real bug found and
+-- fixed project-wide, see macros/utc_timestamp.sql for the full story.
+
 select
-    cast(settlementDate as date)       as settlement_date,
-    cast(settlementPeriod as integer)  as settlement_period,
-    fuelType                           as fuel_type,
-    cast(generation as double)         as generation_mw,
-    cast(startTime as timestamp)       as start_time,
-    cast(publishTime as timestamp)     as publish_time,
-    cast(loaded_at as timestamp)       as loaded_at,
+    cast(settlementDate as date)          as settlement_date,
+    cast(settlementPeriod as integer)     as settlement_period,
+    fuelType                              as fuel_type,
+    cast(generation as double)            as generation_mw,
+    {{ utc_timestamp('startTime') }}      as start_time,
+    {{ utc_timestamp('publishTime') }}    as publish_time,
+    {{ utc_timestamp('loaded_at') }}      as loaded_at,
     source
 from {{ bronze('elexon_generation_by_fuel') }}

@@ -1,0 +1,30 @@
+# Tests for the silver model. Filename: silver__electricity_usage.yml,
+# sits next to the .sql file in models/silver/.
+
+version: 2
+
+models:
+  - name: silver__electricity_usage
+    description: >
+      One row per hand-logged usage period (see manual_usage.py for the
+      CSV format this ultimately comes from). A duplicate or overlapping
+      period is a real data-entry mistake, caught here by the
+      uniqueness test below rather than silently resolved, see the
+      model comment.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - period_start
+              - period_end
+    columns:
+      - name: period_start
+        tests:
+          - not_null
+      - name: period_end
+        tests:
+          - not_null
+      - name: estimated_cost_gbp
+        description: Your supplier's own bill estimate for the period, standing charge and VAT excluded (matching the app's own caption).
+        tests:
+          - not_null

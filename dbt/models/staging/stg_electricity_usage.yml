@@ -1,0 +1,24 @@
+# Tests for the staging model. Filename: stg_electricity_usage.yml,
+# sits next to the .sql file in models/staging/.
+
+version: 2
+
+models:
+  - name: stg_electricity_usage
+    description: >
+      Bronze hand-entered electricity usage, typed and renamed. See
+      manual_usage.py for the CSV format and why bronze here is a full
+      overwrite, not append-only or partition-scoped.
+    columns:
+      - name: period_start
+        tests:
+          - not_null
+      - name: period_end
+        tests:
+          - not_null
+      - name: day_kwh
+        tests:
+          - not_null
+      - name: night_kwh
+        tests:
+          - not_null

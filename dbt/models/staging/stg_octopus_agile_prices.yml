@@ -1,0 +1,24 @@
+# Tests for the staging model. Filename: stg_octopus_agile_prices.yml,
+# sits next to the .sql file in models/staging/.
+
+version: 2
+
+models:
+  - name: stg_octopus_agile_prices
+    description: >
+      Bronze Octopus Agile half-hourly unit rates, typed and renamed.
+      Landed idempotently per data_date (see octopus_agile.py), so
+      unlike the Elexon staging models this is not an append-only log
+      of every past landing.
+    columns:
+      - name: valid_from
+        description: Start of the half hour this rate applies to, UTC.
+        tests:
+          - not_null
+      - name: unit_rate_inc_vat_p_per_kwh
+        description: Pence per kWh, VAT included.
+        tests:
+          - not_null
+      - name: loaded_at
+        tests:
+          - not_null

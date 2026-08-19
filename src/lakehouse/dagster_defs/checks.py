@@ -10,6 +10,7 @@ from lakehouse.dagster_defs.assets import (
     bronze_elexon_generation_by_fuel,
     bronze_elexon_system_prices,
     bronze_neso_connections,
+    bronze_octopus_agile_prices,
     today,
 )
 from lakehouse.io.storage import storage_options, table_uri
@@ -225,6 +226,58 @@ def bronze_neso_connections_schema_check() -> AssetCheckResult:
         return AssetCheckResult(
             passed=False,
             metadata={"reason": f"only {len(df)} rows, expected at least {NESO_CONNECTIONS_MIN_ROWS}"},
+        )
+
+    return AssetCheckResult(passed=True, metadata={"rows": len(df), "table_version": dt.version()})
+
+
+OCTOPUS_AGILE_EXPECTED_COLUMNS = {
+    "valid_from",
+    "valid_to",
+    "value_exc_vat",
+    "value_inc_vat",
+    "loaded_at",
+    "source",
+}
+
+
+@asset_check(
+    asset=bronze_octopus_agile_prices,
+    blocking=True,
+    description="Today's Octopus Agile landing has exactly 48 half-hourly rates and the expected columns.",
+)
+def bronze_octopus_agile_prices_schema_check() -> AssetCheckResult:
+    uri = table_uri("bronze", "octopus_agile_prices")
+    try:
+        dt = DeltaTable(uri, storage_options=storage_options())
+    except TableNotFoundError:
+        return AssetCheckResult(passed=False, metadata={"reason": f"no Delta table found at {uri}"})
+
+    df = dt.to_pandas(partitions=[("data_date", "=", today())])
+
+    if df.empty:
+        return AssetCheckResult(passed=False, metadata={"reason": f"no rows for data_date={today()}"})
+
+    missing = OCTOPUS_AGILE_EXPECTED_COLUMNS - set(df.columns)
+    if missing:
+        return AssetCheckResult(
+            passed=False,
+            metadata={"missing_columns": sorted(missing)},
+        )
+
+    # Unlike the other checks in this file, exactly 48 is checkable
+    # here, not just "non-empty," and without a clock-change exception:
+    # octopus_agile.py's data_date is a UTC calendar date (derived from
+    # valid_from, itself UTC), not the Europe/London settlement-date
+    # convention dim_date/Elexon use. A UTC calendar day never has a
+    # clock change (only Europe/London does), so grouping by it always
+    # yields exactly 48 half hours, on every date, with no 46/50
+    # exception to account for here the way fct_settlement_period's own
+    # tests have to.
+    if len(df) != 48:
+        return AssetCheckResult(
+            passed=False,
+            metadata={"reason": f"{len(df)} rows for data_date={today()}, expected 48"},
         )
 
     return AssetCheckResult(passed=True, metadata={"rows": len(df), "table_version": dt.version()})

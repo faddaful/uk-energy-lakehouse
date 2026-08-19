@@ -1,0 +1,25 @@
+# Tests for the silver model. Filename: silver__agile_prices.yml, sits
+# next to the .sql file in models/silver/.
+
+version: 2
+
+models:
+  - name: silver__agile_prices
+    description: >
+      One row per half hour, deduplicated to the latest loaded_at (see
+      the model comment for why this is defensive, not something normal
+      operation needs). rate_band (day/night) is not computed here, see
+      the model comment for why that lives in fct_agile_prices instead.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - valid_from
+    columns:
+      - name: valid_from
+        tests:
+          - not_null
+      - name: unit_rate_inc_vat_p_per_kwh
+        description: Pence per kWh, VAT included. Genuinely negative on real days (a wholesale-price crash passed straight through), not clamped.
+        tests:
+          - not_null

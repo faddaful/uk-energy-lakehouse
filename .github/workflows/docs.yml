@@ -83,22 +83,22 @@ jobs:
       - name: dbt seed (fixtures)
         working-directory: dbt
         run: |
-          uv run dbt seed --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel, neso_connections_path: ../tests/fixtures/neso_connections}'
+          uv run dbt seed --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel, neso_connections_path: ../tests/fixtures/neso_connections, octopus_agile_prices_path: ../tests/fixtures/octopus_agile_prices, electricity_usage_path: ../tests/fixtures/electricity_usage}'
 
       - name: dbt run (fixtures)
         working-directory: dbt
         run: |
-          uv run dbt run --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel, neso_connections_path: ../tests/fixtures/neso_connections}' --exclude fct_connection_queue+
+          uv run dbt run --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel, neso_connections_path: ../tests/fixtures/neso_connections, octopus_agile_prices_path: ../tests/fixtures/octopus_agile_prices, electricity_usage_path: ../tests/fixtures/electricity_usage}' --exclude fct_connection_queue+
 
       - name: dbt snapshot (fixtures)
         working-directory: dbt
         run: |
-          uv run dbt snapshot --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel, neso_connections_path: ../tests/fixtures/neso_connections}'
+          uv run dbt snapshot --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel, neso_connections_path: ../tests/fixtures/neso_connections, octopus_agile_prices_path: ../tests/fixtures/octopus_agile_prices, electricity_usage_path: ../tests/fixtures/electricity_usage}'
 
       - name: dbt run, second pass, for models that depend on the snapshot (fixtures)
         working-directory: dbt
         run: |
-          uv run dbt run --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel, neso_connections_path: ../tests/fixtures/neso_connections}' --select fct_connection_queue+
+          uv run dbt run --vars '{carbon_intensity_path: ../tests/fixtures/carbon_intensity, carbon_intensity_regional_mix_path: ../tests/fixtures/carbon_intensity_regional_mix, elexon_system_prices_path: ../tests/fixtures/elexon_system_prices, elexon_generation_by_fuel_path: ../tests/fixtures/elexon_generation_by_fuel, neso_connections_path: ../tests/fixtures/neso_connections, octopus_agile_prices_path: ../tests/fixtures/octopus_agile_prices, electricity_usage_path: ../tests/fixtures/electricity_usage}' --select fct_connection_queue+
 
       - name: dbt docs generate
         working-directory: dbt
