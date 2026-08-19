@@ -83,3 +83,45 @@ models:
         description: >
           revision_count as a percentage of total_periods for the month.
           Expected to be small most months, see the model comment.
+
+  - name: mart_greenest_hours_next_48h
+    description: >
+      The next 48 hours for the home region (West Midlands, region_id
+      8), ranked by forecast carbon intensity and, where a real settled
+      price exists, by price. Exported as greenest_hours_next_48h.json,
+      see lakehouse.products.api_export and the model comment for why
+      this is a separate mart from mart_best_hours_today rather than a
+      shared, parametrised one.
+    columns:
+      - name: half_hour_start_utc
+        description: Start of the half hour this row ranks, UTC.
+        tests: [not_null, unique]
+      - name: greenness_rank
+        description: 1 = lowest forecast carbon intensity in the next 48 hours.
+        tests: [not_null]
+      - name: generated_at
+        description: When this mart was last built. Published in the exported JSON as the product's own freshness marker.
+        tests: [not_null]
+
+  - name: mart_latest_price_anomalies
+    description: >
+      Settlement periods in the last 30 days with a negative system sell
+      price, or a swing of £50/MWh or more from the period immediately
+      before. Exported as latest_price_anomalies.json, see
+      lakehouse.products.api_export and the model comment for how this
+      relates to the Streamlit dashboard's own, separate version of the
+      same idea.
+    columns:
+      - name: settlement_period_start_utc
+        description: Start of the settlement period this row flags, UTC.
+        tests: [not_null, unique]
+      - name: anomaly_type
+        description: Why this period was flagged.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["negative_price", "large_swing"]
+      - name: generated_at
+        description: When this mart was last built.
+        tests: [not_null]

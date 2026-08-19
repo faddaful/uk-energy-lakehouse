@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-19T12:15:49Z",
+  "region": {
+    "region_id": 8,
+    "region_short_name": "West Midlands"
+  },
+  "hours": [
+    {
+      "half_hour_start_utc": "2026-08-19T13:00:00Z",
+      "intensity_forecast_gco2_per_kwh": 72,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 3,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T13:30:00Z",
+      "intensity_forecast_gco2_per_kwh": 64,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 2,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T14:00:00Z",
+      "intensity_forecast_gco2_per_kwh": 74,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 4,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T14:30:00Z",
+      "intensity_forecast_gco2_per_kwh": 96,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 7,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T15:00:00Z",
+      "intensity_forecast_gco2_per_kwh": 91,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 6,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T15:30:00Z",
+      "intensity_forecast_gco2_per_kwh": 120,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 9,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T16:00:00Z",
+      "intensity_forecast_gco2_per_kwh": 130,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 11,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T16:30:00Z",
+      "intensity_forecast_gco2_per_kwh": 154,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 14,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T17:00:00Z",
+      "intensity_forecast_gco2_per_kwh": 164,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 16,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T17:30:00Z",
+      "intensity_forecast_gco2_per_kwh": 168,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 17,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T18:00:00Z",
+      "intensity_forecast_gco2_per_kwh": 176,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 19,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T18:30:00Z",
+      "intensity_forecast_gco2_per_kwh": 178,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 21,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T19:00:00Z",
+      "intensity_forecast_gco2_per_kwh": 178,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 22,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T19:30:00Z",
+      "intensity_forecast_gco2_per_kwh": 176,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 20,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T20:00:00Z",
+      "intensity_forecast_gco2_per_kwh": 173,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 18,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T20:30:00Z",
+      "intensity_forecast_gco2_per_kwh": 161,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 15,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T21:00:00Z",
+      "intensity_forecast_gco2_per_kwh": 150,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 13,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T21:30:00Z",
+      "intensity_forecast_gco2_per_kwh": 137,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 12,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T22:00:00Z",
+      "intensity_forecast_gco2_per_kwh": 127,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 10,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T22:30:00Z",
+      "intensity_forecast_gco2_per_kwh": 111,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 8,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T23:00:00Z",
+      "intensity_forecast_gco2_per_kwh": 79,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 5,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "half_hour_start_utc": "2026-08-19T23:30:00Z",
+      "intensity_forecast_gco2_per_kwh": 64,
+      "system_sell_price_gbp_per_mwh": null,
+      "greenness_rank": 1,
+      "cheapness_rank": null,
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    }
+  ]
+}

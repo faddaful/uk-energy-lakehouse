@@ -1,9 +1,10 @@
 """Schedules: bronze carbon intensity every 30 minutes, Elexon revision
 sweeps weekly, NESO connections twice weekly, the revision report
-monthly."""
+monthly, the public data product every few hours."""
 
 from dagster import AssetSelection, ScheduleDefinition, define_asset_job
 
+from lakehouse.dagster_defs.products import data_product_job
 from lakehouse.dagster_defs.reports import revision_report_job
 
 bronze_carbon_intensity_job = define_asset_job(
@@ -90,5 +91,19 @@ bronze_neso_connections_schedule = ScheduleDefinition(
 revision_report_schedule = ScheduleDefinition(
     job=revision_report_job,
     cron_schedule="0 5 1 * *",
+    execution_timezone="UTC",
+)
+
+# Every 3 hours, not on the 30-minute cadence the underlying carbon
+# intensity forecast actually updates on: each refresh that changes
+# anything is a new, permanent git commit (see products.py's own
+# docstring for why, deliberately not amended), and a 30-minute cadence
+# would add up to 48 commits a day forever for a JSON refresh, not a
+# real historical record worth that cost. 3 hours is a compromise
+# between "the public product looks reasonably live" and "this repo's
+# history doesn't fill up with bot commits."
+data_product_schedule = ScheduleDefinition(
+    job=data_product_job,
+    cron_schedule="0 */3 * * *",
     execution_timezone="UTC",
 )

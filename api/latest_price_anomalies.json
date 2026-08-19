@@ -1,0 +1,1645 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-19T12:15:49Z",
+  "window_days": 30,
+  "anomalies": [
+    {
+      "settlement_period_start_utc": "2026-08-19T09:00:00Z",
+      "system_sell_price_gbp_per_mwh": 112.62211822778151,
+      "price_change_gbp_per_mwh": -75.37788177221849,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-19T08:00:00Z",
+      "system_sell_price_gbp_per_mwh": 188.0,
+      "price_change_gbp_per_mwh": -66.9,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-19T07:30:00Z",
+      "system_sell_price_gbp_per_mwh": 254.9,
+      "price_change_gbp_per_mwh": 116.30000000000001,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-18T02:00:00Z",
+      "system_sell_price_gbp_per_mwh": 116.27381401141527,
+      "price_change_gbp_per_mwh": -53.72618598858473,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-17T21:30:00Z",
+      "system_sell_price_gbp_per_mwh": 127.90275532831484,
+      "price_change_gbp_per_mwh": -72.09724467168516,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-17T19:00:00Z",
+      "system_sell_price_gbp_per_mwh": 207.78,
+      "price_change_gbp_per_mwh": 56.05000000000001,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-17T18:30:00Z",
+      "system_sell_price_gbp_per_mwh": 151.73,
+      "price_change_gbp_per_mwh": -53.10000000000002,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-17T18:00:00Z",
+      "system_sell_price_gbp_per_mwh": 204.83,
+      "price_change_gbp_per_mwh": 74.83000000000001,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-17T15:30:00Z",
+      "system_sell_price_gbp_per_mwh": 130.0,
+      "price_change_gbp_per_mwh": -75.44999999999999,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-17T14:00:00Z",
+      "system_sell_price_gbp_per_mwh": 175.94931256713818,
+      "price_change_gbp_per_mwh": 61.069312567138184,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-17T08:30:00Z",
+      "system_sell_price_gbp_per_mwh": 145.09144765277827,
+      "price_change_gbp_per_mwh": -72.80855234722173,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-17T08:00:00Z",
+      "system_sell_price_gbp_per_mwh": 217.9,
+      "price_change_gbp_per_mwh": 58.900000000000006,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-17T07:00:00Z",
+      "system_sell_price_gbp_per_mwh": 160.68,
+      "price_change_gbp_per_mwh": -189.32,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-17T06:30:00Z",
+      "system_sell_price_gbp_per_mwh": 350.0,
+      "price_change_gbp_per_mwh": 120.0,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-17T03:30:00Z",
+      "system_sell_price_gbp_per_mwh": 189.95468481583126,
+      "price_change_gbp_per_mwh": 50.47468481583127,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-16T20:00:00Z",
+      "system_sell_price_gbp_per_mwh": 200.0,
+      "price_change_gbp_per_mwh": -50.0,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-16T19:30:00Z",
+      "system_sell_price_gbp_per_mwh": 250.0,
+      "price_change_gbp_per_mwh": 93.62,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-16T19:00:00Z",
+      "system_sell_price_gbp_per_mwh": 156.38,
+      "price_change_gbp_per_mwh": -63.620000000000005,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-16T08:00:00Z",
+      "system_sell_price_gbp_per_mwh": 109.81,
+      "price_change_gbp_per_mwh": -58.19,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-15T23:30:00Z",
+      "system_sell_price_gbp_per_mwh": 118.47,
+      "price_change_gbp_per_mwh": -67.28,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-15T18:30:00Z",
+      "system_sell_price_gbp_per_mwh": 186.0,
+      "price_change_gbp_per_mwh": 66.0,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-15T18:00:00Z",
+      "system_sell_price_gbp_per_mwh": 120.0,
+      "price_change_gbp_per_mwh": -55.43000000000001,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-15T07:00:00Z",
+      "system_sell_price_gbp_per_mwh": 149.9,
+      "price_change_gbp_per_mwh": -53.099999999999994,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-15T02:00:00Z",
+      "system_sell_price_gbp_per_mwh": 150.0,
+      "price_change_gbp_per_mwh": 50.395796497859095,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-15T01:30:00Z",
+      "system_sell_price_gbp_per_mwh": 99.6042035021409,
+      "price_change_gbp_per_mwh": -56.375796497859085,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-14T22:00:00Z",
+      "system_sell_price_gbp_per_mwh": 112.5,
+      "price_change_gbp_per_mwh": -69.19999999999999,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-14T21:30:00Z",
+      "system_sell_price_gbp_per_mwh": 181.7,
+      "price_change_gbp_per_mwh": -53.20000000000002,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-14T21:00:00Z",
+      "system_sell_price_gbp_per_mwh": 234.9,
+      "price_change_gbp_per_mwh": 96.83000000000001,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-14T20:30:00Z",
+      "system_sell_price_gbp_per_mwh": 138.07,
+      "price_change_gbp_per_mwh": -63.720105263157905,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-14T20:00:00Z",
+      "system_sell_price_gbp_per_mwh": 201.7901052631579,
+      "price_change_gbp_per_mwh": -58.2098947368421,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-14T19:30:00Z",
+      "system_sell_price_gbp_per_mwh": 260.0,
+      "price_change_gbp_per_mwh": 104.47,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-14T19:00:00Z",
+      "system_sell_price_gbp_per_mwh": 155.53,
+      "price_change_gbp_per_mwh": -79.37,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-14T18:00:00Z",
+      "system_sell_price_gbp_per_mwh": 260.0,
+      "price_change_gbp_per_mwh": 95.0,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-14T17:30:00Z",
+      "system_sell_price_gbp_per_mwh": 165.0,
+      "price_change_gbp_per_mwh": -69.9,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-14T16:30:00Z",
+      "system_sell_price_gbp_per_mwh": 198.0,
+      "price_change_gbp_per_mwh": 73.13,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-14T03:30:00Z",
+      "system_sell_price_gbp_per_mwh": 114.47,
+      "price_change_gbp_per_mwh": -66.41,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-14T03:00:00Z",
+      "system_sell_price_gbp_per_mwh": 180.88,
+      "price_change_gbp_per_mwh": 66.7612654333501,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-13T23:00:00Z",
+      "system_sell_price_gbp_per_mwh": 203.0,
+      "price_change_gbp_per_mwh": 85.96,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-13T22:30:00Z",
+      "system_sell_price_gbp_per_mwh": 117.04,
+      "price_change_gbp_per_mwh": -182.95999999999998,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-13T21:30:00Z",
+      "system_sell_price_gbp_per_mwh": 349.0,
+      "price_change_gbp_per_mwh": 220.27,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-13T17:00:00Z",
+      "system_sell_price_gbp_per_mwh": 173.54,
+      "price_change_gbp_per_mwh": 103.13999999999999,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-13T06:30:00Z",
+      "system_sell_price_gbp_per_mwh": 113.95,
+      "price_change_gbp_per_mwh": -82.05,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-13T06:00:00Z",
+      "system_sell_price_gbp_per_mwh": 196.0,
+      "price_change_gbp_per_mwh": 59.53999999999999,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-12T19:00:00Z",
+      "system_sell_price_gbp_per_mwh": 127.63,
+      "price_change_gbp_per_mwh": -138.26,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-12T18:30:00Z",
+      "system_sell_price_gbp_per_mwh": 265.89,
+      "price_change_gbp_per_mwh": 135.89,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-12T15:30:00Z",
+      "system_sell_price_gbp_per_mwh": 85.0,
+      "price_change_gbp_per_mwh": -85.0,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-12T14:30:00Z",
+      "system_sell_price_gbp_per_mwh": 170.0,
+      "price_change_gbp_per_mwh": 66.18,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-12T11:30:00Z",
+      "system_sell_price_gbp_per_mwh": 100.04,
+      "price_change_gbp_per_mwh": -98.96,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-11T23:30:00Z",
+      "system_sell_price_gbp_per_mwh": 164.0,
+      "price_change_gbp_per_mwh": 54.21006408471604,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-11T18:00:00Z",
+      "system_sell_price_gbp_per_mwh": 177.70659342105264,
+      "price_change_gbp_per_mwh": 79.60659342105265,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-11T17:00:00Z",
+      "system_sell_price_gbp_per_mwh": 143.93333333333334,
+      "price_change_gbp_per_mwh": 77.93333333333334,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-11T15:00:00Z",
+      "system_sell_price_gbp_per_mwh": 66.0,
+      "price_change_gbp_per_mwh": -53.59,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-11T14:00:00Z",
+      "system_sell_price_gbp_per_mwh": 157.0,
+      "price_change_gbp_per_mwh": 87.0,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-11T03:00:00Z",
+      "system_sell_price_gbp_per_mwh": 164.0,
+      "price_change_gbp_per_mwh": 50.92,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-11T02:30:00Z",
+      "system_sell_price_gbp_per_mwh": 113.08,
+      "price_change_gbp_per_mwh": -50.92,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-10T23:30:00Z",
+      "system_sell_price_gbp_per_mwh": 111.18,
+      "price_change_gbp_per_mwh": -93.82,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-10T23:00:00Z",
+      "system_sell_price_gbp_per_mwh": 205.0,
+      "price_change_gbp_per_mwh": 85.16,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-10T22:30:00Z",
+      "system_sell_price_gbp_per_mwh": 119.84,
+      "price_change_gbp_per_mwh": -105.16,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-10T20:30:00Z",
+      "system_sell_price_gbp_per_mwh": 225.0,
+      "price_change_gbp_per_mwh": 95.4,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-10T19:00:00Z",
+      "system_sell_price_gbp_per_mwh": 122.29,
+      "price_change_gbp_per_mwh": -102.71,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-10T18:30:00Z",
+      "system_sell_price_gbp_per_mwh": 225.0,
+      "price_change_gbp_per_mwh": 67.66,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-10T18:00:00Z",
+      "system_sell_price_gbp_per_mwh": 157.34,
+      "price_change_gbp_per_mwh": 50.010000000000005,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-10T15:30:00Z",
+      "system_sell_price_gbp_per_mwh": 62.7,
+      "price_change_gbp_per_mwh": -76.3,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-10T15:00:00Z",
+      "system_sell_price_gbp_per_mwh": 139.0,
+      "price_change_gbp_per_mwh": 73.34,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-10T09:00:00Z",
+      "system_sell_price_gbp_per_mwh": 91.9001974353101,
+      "price_change_gbp_per_mwh": -65.0998025646899,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-10T01:30:00Z",
+      "system_sell_price_gbp_per_mwh": 97.11,
+      "price_change_gbp_per_mwh": -51.89,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-09T21:30:00Z",
+      "system_sell_price_gbp_per_mwh": 172.37,
+      "price_change_gbp_per_mwh": 80.60460035331347,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-09T21:00:00Z",
+      "system_sell_price_gbp_per_mwh": 91.76539964668653,
+      "price_change_gbp_per_mwh": -77.05460035331346,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-09T17:00:00Z",
+      "system_sell_price_gbp_per_mwh": 147.5,
+      "price_change_gbp_per_mwh": 60.68000000000001,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-09T16:30:00Z",
+      "system_sell_price_gbp_per_mwh": 86.82,
+      "price_change_gbp_per_mwh": -60.68000000000001,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-09T13:30:00Z",
+      "system_sell_price_gbp_per_mwh": 147.5,
+      "price_change_gbp_per_mwh": 91.76447682604541,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-09T13:00:00Z",
+      "system_sell_price_gbp_per_mwh": 55.7355231739546,
+      "price_change_gbp_per_mwh": 58.07552317395459,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-09T12:30:00Z",
+      "system_sell_price_gbp_per_mwh": -2.34,
+      "price_change_gbp_per_mwh": 6.410344827586208,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-09T12:00:00Z",
+      "system_sell_price_gbp_per_mwh": -8.750344827586208,
+      "price_change_gbp_per_mwh": 0.4496551724137916,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-09T11:30:00Z",
+      "system_sell_price_gbp_per_mwh": -9.2,
+      "price_change_gbp_per_mwh": 0.16000000000000014,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-09T11:00:00Z",
+      "system_sell_price_gbp_per_mwh": -9.36,
+      "price_change_gbp_per_mwh": 4.710000000000001,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-09T10:30:00Z",
+      "system_sell_price_gbp_per_mwh": -14.07,
+      "price_change_gbp_per_mwh": 0.0,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-09T10:00:00Z",
+      "system_sell_price_gbp_per_mwh": -14.07,
+      "price_change_gbp_per_mwh": -3.09,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-09T09:30:00Z",
+      "system_sell_price_gbp_per_mwh": -10.98,
+      "price_change_gbp_per_mwh": -8.279338233333334,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-09T09:00:00Z",
+      "system_sell_price_gbp_per_mwh": -2.700661766666667,
+      "price_change_gbp_per_mwh": -17.410661766666667,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-09T07:00:00Z",
+      "system_sell_price_gbp_per_mwh": 45.9236064106517,
+      "price_change_gbp_per_mwh": -76.7563935893483,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-09T02:30:00Z",
+      "system_sell_price_gbp_per_mwh": 147.5,
+      "price_change_gbp_per_mwh": 56.2,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T22:30:00Z",
+      "system_sell_price_gbp_per_mwh": 96.18374978123884,
+      "price_change_gbp_per_mwh": -75.81625021876116,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T19:00:00Z",
+      "system_sell_price_gbp_per_mwh": 118.40926295224207,
+      "price_change_gbp_per_mwh": -66.00073704775792,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T17:30:00Z",
+      "system_sell_price_gbp_per_mwh": 155.0,
+      "price_change_gbp_per_mwh": 73.84,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T17:00:00Z",
+      "system_sell_price_gbp_per_mwh": 81.16,
+      "price_change_gbp_per_mwh": -53.84,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T16:30:00Z",
+      "system_sell_price_gbp_per_mwh": 135.0,
+      "price_change_gbp_per_mwh": 97.36990099009901,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T15:30:00Z",
+      "system_sell_price_gbp_per_mwh": -6.42,
+      "price_change_gbp_per_mwh": -0.8899009900990098,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T15:00:00Z",
+      "system_sell_price_gbp_per_mwh": -5.53009900990099,
+      "price_change_gbp_per_mwh": 2.8747494017295914,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T14:30:00Z",
+      "system_sell_price_gbp_per_mwh": -8.404848411630581,
+      "price_change_gbp_per_mwh": 5.665151588369419,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T14:00:00Z",
+      "system_sell_price_gbp_per_mwh": -14.07,
+      "price_change_gbp_per_mwh": 0.0,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T13:30:00Z",
+      "system_sell_price_gbp_per_mwh": -14.07,
+      "price_change_gbp_per_mwh": 0.0,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T13:00:00Z",
+      "system_sell_price_gbp_per_mwh": -14.07,
+      "price_change_gbp_per_mwh": -6.8100000000000005,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T12:30:00Z",
+      "system_sell_price_gbp_per_mwh": -7.26,
+      "price_change_gbp_per_mwh": -1.92,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T12:00:00Z",
+      "system_sell_price_gbp_per_mwh": -5.34,
+      "price_change_gbp_per_mwh": 9.13,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T11:30:00Z",
+      "system_sell_price_gbp_per_mwh": -14.47,
+      "price_change_gbp_per_mwh": -0.40000000000000036,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T11:00:00Z",
+      "system_sell_price_gbp_per_mwh": -14.07,
+      "price_change_gbp_per_mwh": -2.8100000000000005,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T10:30:00Z",
+      "system_sell_price_gbp_per_mwh": -11.26,
+      "price_change_gbp_per_mwh": -3.9399999999999995,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T10:00:00Z",
+      "system_sell_price_gbp_per_mwh": -7.32,
+      "price_change_gbp_per_mwh": 3.59,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T09:30:00Z",
+      "system_sell_price_gbp_per_mwh": -10.91,
+      "price_change_gbp_per_mwh": -5.919955947136564,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-08T09:00:00Z",
+      "system_sell_price_gbp_per_mwh": -4.990044052863436,
+      "price_change_gbp_per_mwh": -48.58004405286344,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-07T22:00:00Z",
+      "system_sell_price_gbp_per_mwh": 90.5,
+      "price_change_gbp_per_mwh": -74.09,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-07T19:00:00Z",
+      "system_sell_price_gbp_per_mwh": 171.52,
+      "price_change_gbp_per_mwh": 115.87,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-07T08:00:00Z",
+      "system_sell_price_gbp_per_mwh": 155.0,
+      "price_change_gbp_per_mwh": 57.30205187641859,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-07T07:00:00Z",
+      "system_sell_price_gbp_per_mwh": 86.0,
+      "price_change_gbp_per_mwh": -59.5,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-07T06:00:00Z",
+      "system_sell_price_gbp_per_mwh": 145.0,
+      "price_change_gbp_per_mwh": 51.400000000000006,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-07T00:30:00Z",
+      "system_sell_price_gbp_per_mwh": 102.92,
+      "price_change_gbp_per_mwh": -82.08,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-06T19:30:00Z",
+      "system_sell_price_gbp_per_mwh": 195.0,
+      "price_change_gbp_per_mwh": 65.0,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-06T17:00:00Z",
+      "system_sell_price_gbp_per_mwh": 90.55005128205129,
+      "price_change_gbp_per_mwh": -100.44994871794871,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-06T15:30:00Z",
+      "system_sell_price_gbp_per_mwh": 149.0,
+      "price_change_gbp_per_mwh": 66.33,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-06T15:00:00Z",
+      "system_sell_price_gbp_per_mwh": 82.67,
+      "price_change_gbp_per_mwh": 66.67,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-06T12:00:00Z",
+      "system_sell_price_gbp_per_mwh": 47.82,
+      "price_change_gbp_per_mwh": -101.18,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-06T10:00:00Z",
+      "system_sell_price_gbp_per_mwh": 155.75,
+      "price_change_gbp_per_mwh": 112.67,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-06T08:30:00Z",
+      "system_sell_price_gbp_per_mwh": 85.11,
+      "price_change_gbp_per_mwh": -99.83999999999999,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-06T00:00:00Z",
+      "system_sell_price_gbp_per_mwh": 129.08,
+      "price_change_gbp_per_mwh": 54.68000000000001,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-05T23:30:00Z",
+      "system_sell_price_gbp_per_mwh": 74.4,
+      "price_change_gbp_per_mwh": -66.32999999999998,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-05T21:00:00Z",
+      "system_sell_price_gbp_per_mwh": 155.4,
+      "price_change_gbp_per_mwh": 61.400000000000006,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-05T20:30:00Z",
+      "system_sell_price_gbp_per_mwh": 94.0,
+      "price_change_gbp_per_mwh": -51.19999999999999,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-05T17:00:00Z",
+      "system_sell_price_gbp_per_mwh": 102.24,
+      "price_change_gbp_per_mwh": 133.07999999999998,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-05T16:30:00Z",
+      "system_sell_price_gbp_per_mwh": -30.84,
+      "price_change_gbp_per_mwh": 17.16,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-05T16:00:00Z",
+      "system_sell_price_gbp_per_mwh": -48.0,
+      "price_change_gbp_per_mwh": -17.16,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-05T15:30:00Z",
+      "system_sell_price_gbp_per_mwh": -30.84,
+      "price_change_gbp_per_mwh": -12.129999999999999,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-05T15:00:00Z",
+      "system_sell_price_gbp_per_mwh": -18.71,
+      "price_change_gbp_per_mwh": -4.23,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-05T14:30:00Z",
+      "system_sell_price_gbp_per_mwh": -14.48,
+      "price_change_gbp_per_mwh": -5.48,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-05T14:00:00Z",
+      "system_sell_price_gbp_per_mwh": -9.0,
+      "price_change_gbp_per_mwh": -19.79,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-05T13:00:00Z",
+      "system_sell_price_gbp_per_mwh": -9.8,
+      "price_change_gbp_per_mwh": -21.8,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-05T12:00:00Z",
+      "system_sell_price_gbp_per_mwh": -10.376181670835985,
+      "price_change_gbp_per_mwh": -13.056181670835985,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-05T10:00:00Z",
+      "system_sell_price_gbp_per_mwh": 55.51,
+      "price_change_gbp_per_mwh": -89.49000000000001,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-05T04:00:00Z",
+      "system_sell_price_gbp_per_mwh": 95.08,
+      "price_change_gbp_per_mwh": -57.760000000000005,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-05T00:00:00Z",
+      "system_sell_price_gbp_per_mwh": 158.1,
+      "price_change_gbp_per_mwh": 66.71,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-04T23:30:00Z",
+      "system_sell_price_gbp_per_mwh": 91.39,
+      "price_change_gbp_per_mwh": -57.61,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-04T23:00:00Z",
+      "system_sell_price_gbp_per_mwh": 149.0,
+      "price_change_gbp_per_mwh": 50.17445024658086,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-04T19:00:00Z",
+      "system_sell_price_gbp_per_mwh": 167.42,
+      "price_change_gbp_per_mwh": 68.16999999999999,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-04T14:00:00Z",
+      "system_sell_price_gbp_per_mwh": 139.0,
+      "price_change_gbp_per_mwh": 54.0,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-04T07:00:00Z",
+      "system_sell_price_gbp_per_mwh": 100.35,
+      "price_change_gbp_per_mwh": -51.650000000000006,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-03T19:00:00Z",
+      "system_sell_price_gbp_per_mwh": 174.56,
+      "price_change_gbp_per_mwh": 54.96841007781799,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-03T16:30:00Z",
+      "system_sell_price_gbp_per_mwh": 72.0,
+      "price_change_gbp_per_mwh": -53.42,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-03T06:30:00Z",
+      "system_sell_price_gbp_per_mwh": 198.0,
+      "price_change_gbp_per_mwh": 59.31,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-02T23:00:00Z",
+      "system_sell_price_gbp_per_mwh": 99.9,
+      "price_change_gbp_per_mwh": -54.64963512277575,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-02T19:00:00Z",
+      "system_sell_price_gbp_per_mwh": 185.0,
+      "price_change_gbp_per_mwh": 50.56999999999999,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-02T16:00:00Z",
+      "system_sell_price_gbp_per_mwh": 113.54,
+      "price_change_gbp_per_mwh": 120.03,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-02T15:30:00Z",
+      "system_sell_price_gbp_per_mwh": -6.49,
+      "price_change_gbp_per_mwh": 0.0,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-02T15:00:00Z",
+      "system_sell_price_gbp_per_mwh": -6.49,
+      "price_change_gbp_per_mwh": -152.37,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-02T08:00:00Z",
+      "system_sell_price_gbp_per_mwh": 96.2,
+      "price_change_gbp_per_mwh": -60.8,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-01T21:00:00Z",
+      "system_sell_price_gbp_per_mwh": 178.5,
+      "price_change_gbp_per_mwh": 54.09,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-01T19:00:00Z",
+      "system_sell_price_gbp_per_mwh": 178.5,
+      "price_change_gbp_per_mwh": 74.44,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-01T07:00:00Z",
+      "system_sell_price_gbp_per_mwh": 123.75,
+      "price_change_gbp_per_mwh": -50.25,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-01T06:30:00Z",
+      "system_sell_price_gbp_per_mwh": 174.0,
+      "price_change_gbp_per_mwh": 69.54,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-01T06:00:00Z",
+      "system_sell_price_gbp_per_mwh": 104.46,
+      "price_change_gbp_per_mwh": -63.540000000000006,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-08-01T03:00:00Z",
+      "system_sell_price_gbp_per_mwh": 115.04,
+      "price_change_gbp_per_mwh": -67.96,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-31T15:30:00Z",
+      "system_sell_price_gbp_per_mwh": 142.0,
+      "price_change_gbp_per_mwh": 59.209999999999994,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-31T15:00:00Z",
+      "system_sell_price_gbp_per_mwh": 82.79,
+      "price_change_gbp_per_mwh": -59.209999999999994,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-31T14:30:00Z",
+      "system_sell_price_gbp_per_mwh": 142.0,
+      "price_change_gbp_per_mwh": 50.92,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-31T11:00:00Z",
+      "system_sell_price_gbp_per_mwh": 148.0,
+      "price_change_gbp_per_mwh": 50.75,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-31T07:00:00Z",
+      "system_sell_price_gbp_per_mwh": 99.61927920572512,
+      "price_change_gbp_per_mwh": -88.38072079427488,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-30T22:00:00Z",
+      "system_sell_price_gbp_per_mwh": 122.21,
+      "price_change_gbp_per_mwh": -51.030000000000015,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-29T19:00:00Z",
+      "system_sell_price_gbp_per_mwh": 174.94,
+      "price_change_gbp_per_mwh": -78.96000000000001,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-29T18:30:00Z",
+      "system_sell_price_gbp_per_mwh": 253.9,
+      "price_change_gbp_per_mwh": 91.6704,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-29T18:00:00Z",
+      "system_sell_price_gbp_per_mwh": 162.2296,
+      "price_change_gbp_per_mwh": 61.3296,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-28T23:00:00Z",
+      "system_sell_price_gbp_per_mwh": 85.3,
+      "price_change_gbp_per_mwh": -59.7,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-28T17:00:00Z",
+      "system_sell_price_gbp_per_mwh": 150.0,
+      "price_change_gbp_per_mwh": 68.62,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-28T16:30:00Z",
+      "system_sell_price_gbp_per_mwh": 81.38,
+      "price_change_gbp_per_mwh": -53.620000000000005,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-28T14:00:00Z",
+      "system_sell_price_gbp_per_mwh": 87.76,
+      "price_change_gbp_per_mwh": 74.57000000000001,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-28T12:00:00Z",
+      "system_sell_price_gbp_per_mwh": -13.95,
+      "price_change_gbp_per_mwh": -1.75,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-28T11:30:00Z",
+      "system_sell_price_gbp_per_mwh": -12.2,
+      "price_change_gbp_per_mwh": -1.6999999999999993,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-28T11:00:00Z",
+      "system_sell_price_gbp_per_mwh": -10.5,
+      "price_change_gbp_per_mwh": -43.41,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-27T21:30:00Z",
+      "system_sell_price_gbp_per_mwh": 179.9,
+      "price_change_gbp_per_mwh": 64.86,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-27T18:30:00Z",
+      "system_sell_price_gbp_per_mwh": 115.07,
+      "price_change_gbp_per_mwh": -69.68,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-27T17:30:00Z",
+      "system_sell_price_gbp_per_mwh": 169.88,
+      "price_change_gbp_per_mwh": 101.38,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-27T06:00:00Z",
+      "system_sell_price_gbp_per_mwh": 153.39085890443707,
+      "price_change_gbp_per_mwh": 54.39085890443707,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-27T03:30:00Z",
+      "system_sell_price_gbp_per_mwh": 69.0,
+      "price_change_gbp_per_mwh": 69.0,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-27T03:00:00Z",
+      "system_sell_price_gbp_per_mwh": 0.0,
+      "price_change_gbp_per_mwh": -85.27,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T16:30:00Z",
+      "system_sell_price_gbp_per_mwh": 130.0,
+      "price_change_gbp_per_mwh": 142.42,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T16:00:00Z",
+      "system_sell_price_gbp_per_mwh": -12.42,
+      "price_change_gbp_per_mwh": 3.5900000000000016,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T15:30:00Z",
+      "system_sell_price_gbp_per_mwh": -16.01,
+      "price_change_gbp_per_mwh": 14.214732933459409,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T15:00:00Z",
+      "system_sell_price_gbp_per_mwh": -30.22473293345941,
+      "price_change_gbp_per_mwh": -11.714732933459409,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T14:30:00Z",
+      "system_sell_price_gbp_per_mwh": -18.51,
+      "price_change_gbp_per_mwh": -4.530000000000001,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T14:00:00Z",
+      "system_sell_price_gbp_per_mwh": -13.98,
+      "price_change_gbp_per_mwh": -0.22000000000000064,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T13:30:00Z",
+      "system_sell_price_gbp_per_mwh": -13.76,
+      "price_change_gbp_per_mwh": -9.399999999999999,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T13:00:00Z",
+      "system_sell_price_gbp_per_mwh": -4.36,
+      "price_change_gbp_per_mwh": -11.42,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T12:00:00Z",
+      "system_sell_price_gbp_per_mwh": -15.16,
+      "price_change_gbp_per_mwh": -17.310133333333333,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T11:00:00Z",
+      "system_sell_price_gbp_per_mwh": -19.17,
+      "price_change_gbp_per_mwh": 0.0,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T10:30:00Z",
+      "system_sell_price_gbp_per_mwh": -19.17,
+      "price_change_gbp_per_mwh": 8.989999999999998,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T10:00:00Z",
+      "system_sell_price_gbp_per_mwh": -28.16,
+      "price_change_gbp_per_mwh": 3.2600000000000016,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T09:30:00Z",
+      "system_sell_price_gbp_per_mwh": -31.42,
+      "price_change_gbp_per_mwh": -6.870000000000001,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T09:00:00Z",
+      "system_sell_price_gbp_per_mwh": -24.55,
+      "price_change_gbp_per_mwh": -1.0,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T08:30:00Z",
+      "system_sell_price_gbp_per_mwh": -23.55,
+      "price_change_gbp_per_mwh": 5.68008,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T08:00:00Z",
+      "system_sell_price_gbp_per_mwh": -29.23008,
+      "price_change_gbp_per_mwh": -9.550080000000001,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T07:30:00Z",
+      "system_sell_price_gbp_per_mwh": -19.68,
+      "price_change_gbp_per_mwh": -19.68,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-26T06:30:00Z",
+      "system_sell_price_gbp_per_mwh": -12.05,
+      "price_change_gbp_per_mwh": -12.05,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T18:00:00Z",
+      "system_sell_price_gbp_per_mwh": 145.0,
+      "price_change_gbp_per_mwh": 83.17021276595744,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T17:00:00Z",
+      "system_sell_price_gbp_per_mwh": 44.589224098540875,
+      "price_change_gbp_per_mwh": 52.96922409854088,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T16:30:00Z",
+      "system_sell_price_gbp_per_mwh": -8.38,
+      "price_change_gbp_per_mwh": 22.46,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T16:00:00Z",
+      "system_sell_price_gbp_per_mwh": -30.84,
+      "price_change_gbp_per_mwh": -26.59,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T15:30:00Z",
+      "system_sell_price_gbp_per_mwh": -4.25,
+      "price_change_gbp_per_mwh": 1.3099999999999996,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T15:00:00Z",
+      "system_sell_price_gbp_per_mwh": -5.56,
+      "price_change_gbp_per_mwh": 2.7299999999999995,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T14:30:00Z",
+      "system_sell_price_gbp_per_mwh": -8.29,
+      "price_change_gbp_per_mwh": 6.870000000000001,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T14:00:00Z",
+      "system_sell_price_gbp_per_mwh": -15.16,
+      "price_change_gbp_per_mwh": 22.889999999999997,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T13:30:00Z",
+      "system_sell_price_gbp_per_mwh": -38.05,
+      "price_change_gbp_per_mwh": -7.209999999999997,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T13:00:00Z",
+      "system_sell_price_gbp_per_mwh": -30.84,
+      "price_change_gbp_per_mwh": 0.0,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T12:30:00Z",
+      "system_sell_price_gbp_per_mwh": -30.84,
+      "price_change_gbp_per_mwh": -0.8399999999999999,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T12:00:00Z",
+      "system_sell_price_gbp_per_mwh": -30.0,
+      "price_change_gbp_per_mwh": 8.049999999999997,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T11:30:00Z",
+      "system_sell_price_gbp_per_mwh": -38.05,
+      "price_change_gbp_per_mwh": -0.6699999999999946,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T11:00:00Z",
+      "system_sell_price_gbp_per_mwh": -37.38,
+      "price_change_gbp_per_mwh": -10.730000000000004,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T10:30:00Z",
+      "system_sell_price_gbp_per_mwh": -26.65,
+      "price_change_gbp_per_mwh": -11.45,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T10:00:00Z",
+      "system_sell_price_gbp_per_mwh": -15.2,
+      "price_change_gbp_per_mwh": -71.17999999999999,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T09:30:00Z",
+      "system_sell_price_gbp_per_mwh": 55.98,
+      "price_change_gbp_per_mwh": 67.47,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T09:00:00Z",
+      "system_sell_price_gbp_per_mwh": -11.49,
+      "price_change_gbp_per_mwh": 2.4581413232128746,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T08:30:00Z",
+      "system_sell_price_gbp_per_mwh": -13.948141323212875,
+      "price_change_gbp_per_mwh": -22.468141323212876,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T07:30:00Z",
+      "system_sell_price_gbp_per_mwh": -8.668478798206873,
+      "price_change_gbp_per_mwh": 1.3315212017931266,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T07:00:00Z",
+      "system_sell_price_gbp_per_mwh": -10.0,
+      "price_change_gbp_per_mwh": -161.0,
+      "anomaly_type": "negative_price",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T06:30:00Z",
+      "system_sell_price_gbp_per_mwh": 151.0,
+      "price_change_gbp_per_mwh": 115.98290501803214,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T06:00:00Z",
+      "system_sell_price_gbp_per_mwh": 35.017094981967865,
+      "price_change_gbp_per_mwh": -116.98290501803214,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-25T01:30:00Z",
+      "system_sell_price_gbp_per_mwh": 99.52,
+      "price_change_gbp_per_mwh": -52.480000000000004,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-24T19:00:00Z",
+      "system_sell_price_gbp_per_mwh": 169.15,
+      "price_change_gbp_per_mwh": 54.13000000000001,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-24T09:00:00Z",
+      "system_sell_price_gbp_per_mwh": 112.67,
+      "price_change_gbp_per_mwh": -52.32000000000001,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-24T08:30:00Z",
+      "system_sell_price_gbp_per_mwh": 164.99,
+      "price_change_gbp_per_mwh": 63.47000000000001,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-24T07:00:00Z",
+      "system_sell_price_gbp_per_mwh": 95.0,
+      "price_change_gbp_per_mwh": -54.639999999999986,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-24T00:30:00Z",
+      "system_sell_price_gbp_per_mwh": 130.36,
+      "price_change_gbp_per_mwh": -64.63999999999999,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-23T22:00:00Z",
+      "system_sell_price_gbp_per_mwh": 169.39,
+      "price_change_gbp_per_mwh": 50.85354770708092,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-22T19:30:00Z",
+      "system_sell_price_gbp_per_mwh": 199.9,
+      "price_change_gbp_per_mwh": 61.81999999999999,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-22T17:00:00Z",
+      "system_sell_price_gbp_per_mwh": 155.0,
+      "price_change_gbp_per_mwh": 60.0,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-22T16:00:00Z",
+      "system_sell_price_gbp_per_mwh": 95.0,
+      "price_change_gbp_per_mwh": -60.0,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-22T07:00:00Z",
+      "system_sell_price_gbp_per_mwh": 120.44,
+      "price_change_gbp_per_mwh": -80.56,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-22T05:00:00Z",
+      "system_sell_price_gbp_per_mwh": 174.5,
+      "price_change_gbp_per_mwh": 53.44,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-22T02:00:00Z",
+      "system_sell_price_gbp_per_mwh": 124.23,
+      "price_change_gbp_per_mwh": -55.769999999999996,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-22T01:30:00Z",
+      "system_sell_price_gbp_per_mwh": 180.0,
+      "price_change_gbp_per_mwh": 52.379999999999995,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-22T00:00:00Z",
+      "system_sell_price_gbp_per_mwh": 180.0,
+      "price_change_gbp_per_mwh": 86.9,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-21T22:30:00Z",
+      "system_sell_price_gbp_per_mwh": 92.5,
+      "price_change_gbp_per_mwh": -79.5,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-21T18:00:00Z",
+      "system_sell_price_gbp_per_mwh": 169.35,
+      "price_change_gbp_per_mwh": 56.349999999999994,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-21T14:30:00Z",
+      "system_sell_price_gbp_per_mwh": 87.1,
+      "price_change_gbp_per_mwh": -61.06,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-21T05:30:00Z",
+      "system_sell_price_gbp_per_mwh": 179.0,
+      "price_change_gbp_per_mwh": 56.82142540425251,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-20T23:00:00Z",
+      "system_sell_price_gbp_per_mwh": 113.5,
+      "price_change_gbp_per_mwh": -60.32202946063603,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    },
+    {
+      "settlement_period_start_utc": "2026-07-20T17:30:00Z",
+      "system_sell_price_gbp_per_mwh": 159.0,
+      "price_change_gbp_per_mwh": 61.414621423956746,
+      "anomaly_type": "large_swing",
+      "gold_built_at": "2026-08-19T12:15:41Z"
+    }
+  ]
+}

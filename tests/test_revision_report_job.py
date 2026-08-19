@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from dagster import build_op_context
 
-import lakehouse.dagster_defs.reports as reports_module
+import lakehouse.dagster_defs.git_utils as git_utils_module
 from lakehouse.dagster_defs.reports import commit_and_push_report
 
 
@@ -51,7 +51,7 @@ def working_repo(tmp_path: Path) -> Path:
 
 
 def test_commits_and_pushes_a_new_report(working_repo, monkeypatch):
-    monkeypatch.setattr(reports_module, "REPO_ROOT", working_repo)
+    monkeypatch.setattr(git_utils_module, "REPO_ROOT", working_repo)
 
     reports_dir = working_repo / "reports"
     reports_dir.mkdir()
@@ -72,7 +72,7 @@ def test_commits_and_pushes_a_new_report(working_repo, monkeypatch):
 
 
 def test_a_second_identical_report_makes_no_new_commit(working_repo, monkeypatch):
-    monkeypatch.setattr(reports_module, "REPO_ROOT", working_repo)
+    monkeypatch.setattr(git_utils_module, "REPO_ROOT", working_repo)
 
     reports_dir = working_repo / "reports"
     reports_dir.mkdir()
@@ -97,7 +97,7 @@ def test_none_report_path_is_a_no_op(working_repo, monkeypatch):
     # render_revision_report() returns None when there's nothing to
     # report (see revision_report.py); the op downstream must not try to
     # git-add a path that was never written.
-    monkeypatch.setattr(reports_module, "REPO_ROOT", working_repo)
+    monkeypatch.setattr(git_utils_module, "REPO_ROOT", working_repo)
 
     context = build_op_context()
     commit_and_push_report(context, None)  # must not raise
