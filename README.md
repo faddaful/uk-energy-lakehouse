@@ -1,326 +1,360 @@
 # UK Energy Market Lakehouse
 
-A production-grade data engineering platform that ingests open UK energy data, transforms it through a medallion lakehouse, and serves it to dashboards and alerts. Built in personal time on personal equipment using free, public data.
+A production-grade data engineering platform for UK energy data. It ingests public data, stores it in a Delta Lake medallion architecture, transforms it with dbt, and serves it through Streamlit, GitHub Pages, and automated reports.
 
-The project has two aims: to demonstrate modern analytics engineering practice end to end (orchestration, lakehouse modelling, data quality, CI/CD), and to be genuinely useful, surfacing the cleanest and cheapest times to use electricity in my region.
+The project demonstrates end-to-end data engineering: ingestion, orchestration, lakehouse storage, dimensional modelling, revision handling, data quality, CI/CD, infrastructure as code, and public data products.
 
 ## Status
 
-Phase 1 is complete: a scheduled pipeline lands regional carbon intensity data every 30 minutes, transforms it through tested staging and silver models, and is guarded by continuous integration on every change.
+### Phase 1: Carbon Intensity
+Complete.
 
-Phase 2 is complete. Elexon ingestion and revision resolution are done for both system prices and generation by fuel type: bronze lands every settlement date, a weekly Dagster job re-downloads the trailing 28 days to catch anything that changes, and silver resolves each natural key to one trustworthy value with a full audit trail of every change observed. Bronze is Delta Lake, not plain parquet, and storage can point at either a local disk or a real Azure ADLS Gen2 account (provisioned by Terraform) via one environment variable.
+- Regional carbon intensity ingested every 30 minutes.
+- Bronze and silver models use Delta Lake and dbt.
+- Data quality checks run in CI.
 
-Phase 3 is complete: a dimensional gold layer (four dimensions, three incremental facts, three dashboard-shaped marts), a personal Streamlit dashboard reading straight from it, and published dbt docs. Power BI was dropped from the plan in favour of Streamlit alone. One dashboard, kept genuinely useful, beats two built to tick a box. See [The gold layer](#the-gold-layer) below for the gold-layer design decisions and [Dashboard](#dashboard) for how the app is run and reached from a phone.
+### Phase 2: Elexon
+Complete.
 
-Phase 4, first piece, is complete: the connections queue observatory. NESO's TEC register only ever publishes its current state, twice a week, with no public history; this project now lands every publish and turns it into real row-level history with a dbt snapshot, this project's first. See [The connections queue observatory](#the-connections-queue-observatory) below for what the real data actually looks like and the design decisions that came out of checking it directly rather than assuming the plan's first draft.
+- System prices and generation by fuel type ingested at settlement-period grain.
+- Bronze is append-only to preserve source revisions.
+- A weekly job re-downloads the previous 28 days.
+- Silver resolves each natural key to the latest observed value and keeps a revision audit trail.
+- Handles 46-period spring clock-change days and 50-period autumn clock-change days.
+- Local Delta storage and Azure ADLS Gen2 are supported through a single target switch.
 
-Phase 4, second piece, is complete: the revision observatory goes public. `mart_revision_summary` now publishes itself: a monthly Dagster job renders it as a plain-English Markdown report and commits + pushes it to `reports/`, real repo automation running unattended, not a dry run. See [The revision observatory goes public](#the-revision-observatory-goes-public) below.
+### Phase 3: Gold layer and dashboard
+Complete.
 
-Phase 4, third piece, is complete: the public data product. Two gold marts, exported as `greenest_hours_next_48h.json` and `latest_price_anomalies.json`, refreshed every 3 hours and served straight off GitHub Pages, no server, no auth, no uptime to own. See [The public data product](#the-public-data-product) below for the schema, the update cadence, and why it commits a new entry per refresh rather than amending, unlike the revision report.
+- Five dimensions, four incremental facts, and three marts.
+- Streamlit dashboard reads directly from the gold layer.
+- dbt documentation is published to GitHub Pages.
+- Power BI was removed from the plan; Streamlit is the dashboard platform.
 
-Phase 4, fourth piece, is complete: the money story. Would Octopus Agile have cost less than what I actually paid? No half-hourly smart-meter export exists to answer this with full rigour, so it doesn't pretend to have one: real day/night usage totals, hand-logged from a supplier app, compared against Agile's real published rates. Real answer so far: no, Agile would have cost more. Building this also surfaced and fixed a real, previously invisible bug in Phase 2's own Elexon timestamps. See [The money story](#the-money-story) below.
+### Phase 4: Observability and public products
+Complete.
+
+- NESO connections queue history using dbt snapshots.
+- Monthly revision reports generated and pushed automatically.
+- Public JSON data products refreshed every three hours.
+- Octopus Agile comparison using available day/night usage data.
 
 ## Architecture
 
 ![Architecture](images/uk-energy-lakehouse-architecture-current.png)
 
-Data flows from open APIs through Python extractors into a bronze, silver, gold medallion lakehouse, orchestrated by Dagster, transformed and tested by dbt, and served to dashboards.
-
 ## What works today
 
-- Idempotent Python extractor for the Carbon Intensity API, landing bronze as two Delta tables from one endpoint call (intensity + index, and a per-fuel regional generation mix, a different, coarser 9-fuel taxonomy from Elexon's), one partition-scoped overwrite per data_date each.
-- Python extractors for Elexon system prices and generation by fuel type, at settlement-period grain, correctly handling the 46/50-period clock-change days (computed from the timezone database, not hardcoded). No API key needed; both are good citizens of the public API with a descriptive User-Agent, rate limiting, and backoff on errors.
-- Elexon revision resolution, for both system prices and generation by fuel type: bronze is append-only for both (see [Why bronze never overwrites for Elexon](#why-bronze-never-overwrites-for-elexon) below), a weekly Dagster job re-downloads the trailing 28 days for each, and an incremental silver model resolves each natural key (settlement_date + settlement_period for prices; settlement_date + settlement_period + fuel_type for generation, since one row there is one fuel type within one period) to its latest-seen value, with a full audit table logging every change ever observed.
-- Storage on Delta Lake, locally or on Azure ADLS Gen2 behind one `TARGET` switch (see [Local vs Azure storage](#local-vs-azure-storage) below): atomic writes, a real transaction log, and time travel to query bronze as it stood before a revision landed.
-- Infrastructure as code: `infra/terraform/main.tf` provisions the resource group, ADLS Gen2 storage account (hierarchical namespace on), and container, plus an Azure AD role assignment so the pipeline authenticates via the Azure CLI's cached login rather than a long-lived key.
-- Dagster orchestration: carbon intensity runs as a scheduled asset every 30 minutes; the two Elexon sources re-download weekly, staggered 30 minutes apart. All three have a blocking asset check that validates the landed data.
-- dbt transformations on DuckDB: staging models that read bronze Delta tables via `delta_scan()`, type and clean the raw data, and silver models that resolve each source to one trustworthy row per natural key.
-- Data quality: dbt tests (not null, uniqueness of a column combination, accepted values, range checks via dbt-expectations, and custom tests asserting resolved values trace back to a real bronze row and that revision counts stay sane) covering the models. Dedicated pytests also exercise the revision-resolution SQL idiom directly against synthetic data for both Elexon sources, independent of dbt.
-- Continuous integration: GitHub Actions runs linting, unit tests, and a full dbt build against committed sample fixtures (small Delta tables, not flat parquet files, including a synthetic revision scenario for each Elexon source) on every push and pull request.
-- A dimensional gold layer: five dimensions (`dim_date`, `dim_settlement_period`, `dim_region`, `dim_fuel_type`, `dim_ci_fuel_type`), four incremental facts (`fct_settlement_period`, `fct_generation`, `fct_regional_intensity`, `fct_regional_generation_mix`), and three dashboard-shaped marts, all materialised as tables inside the same DuckDB file silver already lives in. Correctly handles the 46/50-period clock-change days end to end, not just at ingestion (see [The gold layer](#the-gold-layer) below).
-- Published dbt docs: a public lineage graph and column-level catalog, built from committed fixtures (no Azure credentials needed) and deployed to GitHub Pages on every push to `main`.
-- Self-audited with `dbt_project_evaluator`: DAG shape, naming, folder structure, and test/documentation coverage, configured for this project's actual staging/silver/gold layering rather than left on the package's default assumptions. Every finding is either fixed, or documented as a deliberate exception with real reasoning, or left visibly open as a genuine gap (see [Auditing the project](#auditing-the-project) below).
-- A personal Streamlit dashboard reading straight from gold, startable on demand from Dagster, reachable from a phone over Tailscale (see [Dashboard](#dashboard) below).
-- A connections queue observatory: a NESO TEC register extractor, landed twice weekly and turned into real row-level history by this project's first dbt snapshot, a periodic-snapshot gold fact and mart, and a Streamlit tab (queue size over time, technology mix, average connection year, month-on-month movement). See [The connections queue observatory](#the-connections-queue-observatory) below.
-- A self-publishing revision observatory: a monthly Dagster job renders `mart_revision_summary` as a plain-English `reports/revision-summary-YYYY-MM.md`, commits it, and pushes, no manual step. See [The revision observatory goes public](#the-revision-observatory-goes-public) below.
-- A public data product: `greenest_hours_next_48h.json` and `latest_price_anomalies.json`, refreshed every 3 hours and served off GitHub Pages, no server to run. See [The public data product](#the-public-data-product) below.
-- The money story: real day/night usage logged by hand against Octopus Agile's real published half-hourly rates, answering whether Agile would have cost less. See [The money story](#the-money-story) below.
+### Ingestion
+
+- Carbon Intensity API extractor with idempotent, partition-scoped writes.
+- Elexon system price and generation extractors.
+- NESO TEC connections register extractor.
+- Octopus Agile price extractor.
+- Correct handling of UK settlement periods and daylight-saving clock changes.
+- API rate limiting and retry/backoff for Elexon.
+- Bronze data stored as Delta tables.
+
+### Revision handling
+
+Elexon data can change after publication, so its bronze tables are append-only.
+
+A weekly Dagster job re-downloads the previous 28 days. Silver models resolve the latest value for each natural key while retaining an audit trail of observed changes.
+
+This design preserves the raw history and allows later revisions to be detected without overwriting previous landings.
+
+### Transformations and data quality
+
+dbt runs on DuckDB.
+
+- Staging models clean and type bronze data.
+- Silver models resolve source records.
+- Gold contains dimensions, facts, and marts.
+- dbt tests cover nulls, uniqueness, accepted values, ranges, revision integrity, and source traceability.
+- Pytest covers revision-resolution logic and pipeline behaviour.
+- CI runs linting, unit tests, and a full dbt build against committed Delta fixtures.
+
+### Gold layer
+
+Gold contains:
+
+- `dim_date`
+- `dim_settlement_period`
+- `dim_region`
+- `dim_fuel_type`
+- `dim_ci_fuel_type`
+- `fct_settlement_period`
+- `fct_generation`
+- `fct_regional_intensity`
+- `fct_regional_generation_mix`
+- Dashboard marts
+
+Settlement-period timestamps use Elexon's published UTC `startTime`.
+
+The model explicitly handles 46-period spring clock-change days and 50-period autumn clock-change days.
+
+The Carbon Intensity and Elexon generation classifications remain separate because they use different fuel taxonomies and grains.
+
+### NESO connections queue
+
+The TEC register is published twice weekly.
+
+The pipeline:
+
+1. Resolves the current CSV URL through the NESO CKAN API.
+2. Lands each publication in bronze.
+3. Uses a dbt snapshot to maintain row-level SCD Type 2 history.
+4. Builds a periodic snapshot fact and queue-evolution mart.
+5. Exposes queue size, technology mix, connection-year trends, and month-on-month movement in Streamlit.
+
+The source grain is project tranche rather than project. `(Project ID, Stage)` is not always unique, so the staging model creates a deterministic connection key.
+
+### Revision observatory
+
+A monthly Dagster job:
+
+1. Reads `mart_revision_summary`.
+2. Generates `reports/revision-summary-YYYY-MM.md`.
+3. Commits the report.
+4. Pushes it to GitHub.
+
+The report covers revision size, largest changes, and the share of settlement periods revised.
+
+The job does not trigger dbt, so the report reflects the latest completed gold build.
+
+### Public data product
+
+Two JSON files are published through GitHub Pages:
+
+- `greenest_hours_next_48h.json`: next 48 hours for the West Midlands, ranked by forecast carbon intensity and available settled price.
+- `latest_price_anomalies.json`: negative system prices and half-hour price movements of £50/MWh or more over the previous 30 days.
+
+Both include:
+
+- `schema_version`
+- `generated_at`
+- `gold_built_at`
+
+The product refreshes every three hours. An unchanged result produces no new commit.
+
+### Money story
+
+The project compares Octopus Agile rates with actual household usage.
+
+Available usage data is limited to manually recorded day/night totals, so the comparison estimates Agile cost by applying average Agile rates to each usage band.
+
+For the two periods recorded so far:
+
+- July: £60.28 Agile vs £52.38 actual
+- Second week of August: £17.18 Agile vs £11.63 actual
+- Difference: Agile £13.45 higher
+
+This cannot determine whether shifting consumption to the dashboard's cheapest hours reduced actual costs because half-hourly consumption data is unavailable.
 
 ## Tech stack
 
-Python, Dagster (orchestration), Delta Lake with DuckDB's `delta` extension (storage and query), dbt with DuckDB (transformation, gold-layer dimensional modelling, snapshots, and testing), Streamlit with Plotly (dashboard), Azure ADLS Gen2 with Terraform (cloud storage and infrastructure as code), GitHub Actions (CI and dbt docs publishing), uv (packaging and environments).
+| Area | Technology |
+|---|---|
+| Language | Python |
+| Orchestration | Dagster |
+| Storage | Delta Lake |
+| Query engine | DuckDB |
+| Transformation | dbt |
+| Dashboard | Streamlit + Plotly |
+| Cloud storage | Azure ADLS Gen2 |
+| Infrastructure | Terraform |
+| CI/CD | GitHub Actions |
+| Packaging | uv |
 
 ## Data sources
 
-All free and public.
+All sources are public and free to access.
 
-- Carbon Intensity API: regional generation mix and carbon intensity (forecast, gCO2/kWh, and the API's own qualitative band), half-hourly with a 48-hour forecast. In use now.
-- Elexon Insights (BMRS): wholesale prices, generation by fuel type, balancing. Public, no key required. Phase 2.
-- NESO Data Portal: the Transmission Entry Capacity (TEC) connections register. In use now (Phase 4). Demand forecasts and interconnector flows remain later phases.
+- Carbon Intensity API: regional intensity and generation mix.
+- Elexon Insights / BMRS: system prices and generation by fuel type.
+- NESO Data Portal: TEC connections register.
+- Octopus public Agile price feed.
+- GOV.UK bank holidays API.
 
 ## Repository layout
 
+```text
+src/lakehouse/        Python extractors, storage, Dagster definitions, reports
+dbt/                  Staging, silver, snapshots, gold, seeds, tests, macros
+tests/                Pytest tests and CI fixtures
+apps/                 Streamlit dashboard
+infra/terraform/      Azure infrastructure and RBAC
+.github/workflows/    CI and dbt documentation publishing
 ```
-src/lakehouse/        Python: extractors, io/storage (local vs Azure), Dagster definitions, alerts
-dbt/                  dbt: staging, silver, snapshots, gold (dimensions/facts/marts), seeds, tests, macros
-tests/                pytest unit tests and CI fixtures (Delta tables)
-.github/workflows/    CI pipeline, dbt docs publish
-infra/terraform/      Resource group, ADLS Gen2 storage account, container, RBAC role assignment
-apps/                 Streamlit dashboard (from Phase 3)
-```
 
-## Why bronze never overwrites for Elexon
+## Local and Azure storage
 
-Carbon Intensity's bronze extractor overwrites the same file when re-run for a date it has already landed: that data source has no concept of revision, so the latest fetch is always the correct fetch, and idempotent overwrite is the simpler, correct design.
-
-Elexon is different, for both system prices and generation by fuel type. Elexon can revise a published value after the fact, so a value fetched today is not guaranteed to still be the current value next week. If bronze overwrote on every re-download, the earlier value would be gone before anything downstream could notice it had changed. So bronze is append-only for both: every write uses `mode="append"` on the Delta table, which only ever adds rows and never replaces or removes one, and a weekly Dagster job re-downloads the trailing 28 days for each, specifically to catch anything that changed since the last landing. Nothing is ever deleted from bronze; silver is where a single trustworthy value gets picked out of however many landings exist for a given key. Carbon Intensity, in contrast, uses `mode="overwrite"` scoped to the one data_date being re-landed (a `predicate` on the write, matching Delta's partitioning), idempotent by design, and every other date already in the table is left untouched.
-
-**One correction to how this is usually described.** The standard explanation of Elexon settlement is that a value is published as an early estimate and then corrected over a formal reconciliation calendar spanning weeks to months (II → SF → R1 → R2 → R3 → RF, the last one landing roughly 14 months after the settlement date). Before building the resolution logic, this was checked directly against the live API rather than assumed, for both sources: `/balancing/settlement/system-prices/{date}` and `/datasets/FUELHH` were both queried for settlement dates 1 day, 2.5 months, 7 months, and 15 months old, and in every case `createdDateTime` / `publishTime` sat within about a day of the original settlement date, with no trace of the later reconciliation runs touching either. Neither endpoint exposes a settlement-run-type field at all, so there is nothing to rank a "most authoritative run" against on either source, only `loaded_at`.
-
-The practical upshot: both endpoints appear to reflect only the fast initial settling (within roughly a day of the settlement period), not the multi-month reconciliation cycle that applies to metered volumes elsewhere in BSC settlement. The design above (bronze keeps everything, weekly re-download, resolve on latest `loaded_at`) is still the right architecture regardless: it costs one extra weekly pass over a bit more history, and it is what would catch a later revision if either endpoint's behaviour is ever wrong or changes. But expect `silver__price_revisions` and `silver__generation_revisions` to be sparse or empty most weeks. That is the healthy state for these data sources, not a sign the pipeline is broken.
-
-## The gold layer
-
-Five dimensions, four incremental facts, three marts, all in `dbt/models/gold/`, all materialised as DuckDB tables inside the same file silver already lives in: gold is derived and cheap to rebuild, so there is no reason to write it back out to ADLS. The Streamlit dashboard reads this same file directly (see [Dashboard](#dashboard) below); a separate export step only becomes necessary the day a consumer can't reach this file itself, e.g. a publicly hosted dashboard. `+schema: gold` puts them in their own schema in the catalog (`main_gold`); staging and silver stay unscoped in `main`, where Phase 1/2 already built them.
-
-**Settlement periods are numbered in local clock time, not UTC, so two days a year don't have 48.** The last Sunday in March (clocks forward, the 01:00-02:00 hour doesn't happen) has **46**. The last Sunday in October (clocks back, that hour happens twice) has **50**. Not "49 or 50" (a mistake worth correcting explicitly, since it's an easy one to repeat). `dim_date.settlement_periods_in_day` carries the right number for every day, computed by walking back from 31 March/October to the preceding Sunday and verified against the real 2026 BST dates (29 March, 25 October) before being trusted. Two tests check it: `tests/assert_clock_change_day_period_counts.sql` checks dim_date's entire deterministic date range on every build (it doesn't need a real clock-change day to have passed through the pipeline: dim_date depends on nothing but today's date and a static seed), and `tests/assert_period_count_matches_calendar.sql` checks real ingested data once it has a materially complete day to check.
-
-**`fct_settlement_period.settlement_period_start_utc` is Elexon's own `startTime` field, not something derived from the period number.** An earlier plan for this layer assumed the authoritative timestamp would have to be built from period arithmetic and a clock-change formula, the same way `dim_settlement_period.nominal_start_time_local` is. Checked against the real bronze schema before writing the model: Elexon already publishes a genuine UTC `startTime` per settlement period, so the fact table just carries it through: one less place for the clock-change logic to be re-implemented and one less place it could disagree with itself.
-
-**`fct_generation.share_of_mix_pct` includes interconnectors in its denominator** (net-mix semantics), a choice checked against 90 days of this project's own real bronze data before picking a test tolerance for it, not assumed: domestic (non-interconnector) fuels' combined share ranged from 0% to ~144% of the net-mix total across 4,352 real settlement periods, hitting exactly 0% for two consecutive periods on 2026-07-07 when every domestic fuel type was reported as literal zero while interconnector flows were already populated (a genuine late-publish gap in Elexon's feed, not a modelling bug). `tests/assert_mix_shares_within_expected_range.sql` encodes this as a `severity: warn` test with a low warn threshold and a much higher error threshold: an isolated gap like that one should surface, not fail the build; a systemic problem still would.
-
-**The two reference seeds were verified against independent sources, not typed in from the plan this layer follows.** `seed_fuel_type`'s 20 FUELHH codes were checked against `select distinct fuelType` over this project's own 90 days of real bronze data, an exact match. `seed_region`'s GSP group letter mapping (`_A` for UKPN East, and so on) was checked against Sheffield Solar's public PV_Live API (`https://api.pvlive.uk/pvlive/api/v4/pes_list`), an independent source that ships the same table, also an exact match. Both seeds are named `seed_<x>`, not `dim_<x>`: dbt currently allows a seed and a model to share a name (as a deprecation warning, not an error, confirmed by actually running `dbt parse`), but that is explicitly flagged as being removed, so the seeds were named to not depend on it.
-
-`uk_bank_holidays` (England & Wales, Scotland, Northern Ireland, 2023-2028) comes from the gov.uk bank holidays API, the canonical source. Only England & Wales feeds `dim_date.is_working_day` today.
-
-**`fct_regional_generation_mix` and `intensity_index` closed a gap this layer originally shipped with.** The regional Carbon Intensity endpoint returns both a `generationmix` breakdown and a qualitative `index` label (e.g. "low", "moderate") on every call (checked directly against the live API, not assumed), but the extractor originally only kept `intensity.forecast`/`intensity.actual`/`region_id`. Both are now landed: `index` as a new column carried through `fct_regional_intensity` unchanged (its numeric thresholds are not published anywhere this project found, so it is never recomputed, only passed through), and `generationmix` as its own bronze table and fact, `fct_regional_generation_mix`, one row per half hour + region + fuel. That fact is deliberately not merged into `fct_generation`: the Carbon Intensity API's own 9-fuel taxonomy (`seed_ci_fuel_type`, notably including solar, which Elexon's transmission-metered FUELHH does not) is a different, coarser classification from Elexon's 20 FUELHH codes, on a different grain (regional forecast percentage, not GB-wide metered MW), so the two mixes are never joined to each other.
-
-`bronze_carbon_intensity_regional_mix` lands from a second request to the same endpoint `bronze_carbon_intensity` calls, not a shared fetch: the endpoint has no documented rate limit, and one extra call every 30 minutes is negligible next to Elexon's courtesy throttling (see `elexon_common.py`), so keeping the two fetch functions independent was simpler than restructuring both around a shared raw response.
-
-Every gold model and non-obvious column has a description; run `cd dbt && uv run dbt docs generate --static` to build the lineage graph and column catalog locally, or browse the published version at **[faddaful.github.io/uk-energy-lakehouse](https://faddaful.github.io/uk-energy-lakehouse/)**, built from committed fixtures on every push to `main` (`.github/workflows/docs.yml`), no Azure credentials needed, same principle as CI's own build job.
-
-## The connections queue observatory
-
-The plan behind this piece assumed NESO's TEC register updates "roughly monthly." Checked directly against the live [NESO data portal](https://www.neso.energy/data-portal/transmission-entry-capacity-tec-register) before writing any code, that turned out to be wrong: it republishes twice a week, Tuesdays and Fridays, and the file is small (~440KB), so `bronze_neso_connections` lands on that real cadence rather than the plan's original guess. See `neso_connections.py`'s module docstring for the rest of what checking the real CSV surfaced before this was built, not assumed from the plan:
-
-- **The download URL is not stable.** NESO's CKAN resource embeds the publish date in the filename itself (`tec-register-18-august-2026.csv`), and it changes on every publish. `resolve_csv_url()` looks it up fresh from the CKAN API (`package_show`) on every run instead of hardcoding a URL.
-- **Row grain is per project *tranche*, not per project.** A project with staged capacity gets one row per `Stage` (1-5); `Project ID` alone is not unique (2,057 unique IDs over 2,198 rows in the register as landed on 2026-08-18).
-- **`(Project ID, Stage)` still is not a clean key.** NESO's own field notes explain why: an already-built project adding new generation gets a second row with the same `Project ID` and a blank `Stage`, until the addition is itself built and the two rows merge back into one. `stg_neso_connections.sql`'s `connections_key` breaks that tie deterministically, sorting on fields that describe what the row is rather than where it sat in the CSV, and this is what the dbt snapshot below actually snapshots on. `tests/test_connections_queue_dedup.py` exercises the same idiom directly against a synthetic version of this exact scenario.
-- **Bronze keeps NESO's own column names verbatim, spaces, slashes and parentheses included** (`"MW Increase / Decrease"`, `"Cumulative Total Capacity (MW)"`). Confirmed against a real write and a real `delta_scan()` read before trusting it, not assumed: Delta and DuckDB both handle it fine. Staging is where they get renamed.
-- **Stage and Gate can land entirely NULL in a single fetch.** Both are mostly-NULL columns in the real register (about 88% and 63% of rows), and a small CI fixture built from real data hit this on the first try: an all-NULL pandas column has no non-null value for pyarrow to infer a type from, so it lands as Arrow's void type, which DuckDB's `delta_scan()` rejects outright. Same failure mode, same fix, as `carbon_intensity.py`'s `intensity_actual` column (see [Local vs Azure storage](#local-vs-azure-storage) below): force a concrete `float64` cast in `fetch_connections_data()` rather than leave it to inference.
-
-**This is the first thing in this project to use a real dbt snapshot** (`dbt/snapshots/snapshot_connection_queue.sql`), not the recompute-from-append-only-bronze window function `silver__price_revisions.sql` uses. The TEC register is a different shape of problem: ~2,200 rows where any of them can change between landings, and rows genuinely appearing and disappearing as projects join and leave the queue, which is exactly the row-level insert/update/expire pattern dbt snapshot's SCD Type 2 machinery exists for. `strategy='check'` against an explicit column list, not `'all'`: NESO gives no reliable per-row "this changed at" timestamp to sort on, and `check_cols='all'` would have made the extractor's own `as_of_date`/`loaded_at` bookkeeping columns look like a change on every single run, since they change on every single run. Verified by actually re-running `dbt snapshot` twice in a row against the same landing before trusting it: 2,198 rows, still 2,198 open rows, not 4,396. `invalidate_hard_deletes=True` is also on, deliberately: without it, a project that genuinely leaves the register would just sit in the snapshot marked "current" forever, silently stale.
-
-Gold turns that SCD history into a periodic snapshot fact, `fct_connection_queue` (one row per project tranche per `as_of_month`, "whichever snapshot version was open through the end of that month"), and a mart, `mart_queue_evolution` (queue size, capacity mix by technology, and `connection_date_slippage_days`: how far NESO's own published `MW Effective From` moved for a project between one monthly snapshot and the next). `primary_technology` (the first-listed token of NESO's own semicolon-delimited, multi-value `Plant Type` column) feeds a new dimension, `dim_technology`, over a new seed, `seed_neso_technology`: NESO's own field notes admit "capacity across stages and technology types is currently presented in aggregate," so attributing a row's whole MW to every listed technology would double-count it in any mix total, and attributing it to only the first-listed one is the honest choice given what the source actually provides.
-
-The Streamlit tab (see [Dashboard](#dashboard) below) is deliberately built to look sensible on one month of history and get richer on its own: queue size over time shows a real chart once there are two monthly snapshots to plot and a plain explanation until then, and month-on-month movement does the same. Nothing needs backfilling by hand; it fills in from the next Tuesday or Friday landing onward.
-
-## The revision observatory goes public
-
-`mart_revision_summary` (see [The gold layer](#the-gold-layer) above) already had the numbers; this piece is what makes them show up somewhere without a manual step. `revision_report_job` (`src/lakehouse/dagster_defs/reports.py`) runs on the 1st of each month, renders `reports/revision-summary-YYYY-MM.md` (`src/lakehouse/reports/revision_report.py`: mean and median revision size, biggest individual movers pulled straight from `silver__price_revisions`, share of periods revised), and commits + pushes it. It reports on the month that just closed, not the current one, so the numbers it publishes are never a moving target.
-
-**This is real repo automation, not a dry run: a scheduled job changes what's on GitHub without a human in the loop that day.** That was a deliberate choice, checked explicitly rather than defaulted into: the alternative (write the file, leave committing to a human) is safer but defeats the point of "goes public" being something that just happens. The op is written to fail loudly rather than silently if git ever does something unexpected (a non-zero exit from `commit` or `push` raises), and "nothing to commit" (a same-day re-run producing byte-identical content) is treated as a real, expected outcome, not an error, via `git diff --cached --quiet` before attempting a commit at all.
-
-Proved before trusting it, the same way everything else real repo-state-changing in this project has been: `commit_and_push_report()`'s git subprocess calls are exercised in `tests/test_revision_report_job.py` against a throwaway local repo with a real (throwaway, bare) remote, never this project's actual GitHub remote. Three things checked for real: a new report gets committed and actually reaches the remote (`origin/main`'s tip matches local `HEAD` after the push, not just "the command exited 0"), a second identical report adds no second commit, and a `None` report (nothing to report that month, the common case per `mart_revision_summary`'s own near-empty-most-months design, see [Why bronze never overwrites for Elexon](#why-bronze-never-overwrites-for-elexon)) is a clean no-op.
-
-**Does not trigger a dbt build first.** Nothing in this project schedules dbt through Dagster today; dbt runs by hand or in CI. The report reads whatever gold was last built with, the same limitation the Streamlit dashboard already has. Worth knowing, not hidden: if gold is stale when this job runs, the report will be stale too.
-
-## The public data product
-
-Two JSON files, served from GitHub Pages, no server to run and nothing to authenticate:
-
-- **`greenest_hours_next_48h.json`** — https://faddaful.github.io/uk-energy-lakehouse/api/greenest_hours_next_48h.json — the next 48 hours for the home region (West Midlands), ranked by forecast carbon intensity and, where a real settled price exists, by price.
-- **`latest_price_anomalies.json`** — https://faddaful.github.io/uk-energy-lakehouse/api/latest_price_anomalies.json — every settlement period in the last 30 days with a negative system sell price, or a swing of £50/MWh or more from the period immediately before.
+`TARGET` controls where Python extractors write data.
 
 ```bash
-curl -s https://faddaful.github.io/uk-energy-lakehouse/api/greenest_hours_next_48h.json | jq '.hours[0]'
+TARGET=local
+TARGET=azure
 ```
 
-**Schema.** Both files carry `schema_version` (an integer, bumped on any breaking shape change; nothing to consume without checking it first) and `generated_at` (UTC, `Z`-suffixed ISO 8601: when this specific JSON was written, not when gold was last built, see the cadence note below).
+Local:
 
-`greenest_hours_next_48h.json`:
-```json
-{
-  "schema_version": 1,
-  "generated_at": "2026-08-19T12:07:53Z",
-  "region": { "region_id": 8, "region_short_name": "West Midlands" },
-  "hours": [
-    {
-      "half_hour_start_utc": "2026-08-19T13:00:00Z",
-      "intensity_forecast_gco2_per_kwh": 72,
-      "system_sell_price_gbp_per_mwh": null,
-      "greenness_rank": 3,
-      "cheapness_rank": null,
-      "gold_built_at": "2026-08-19T12:05:05Z"
-    }
-  ]
-}
-```
-`system_sell_price_gbp_per_mwh` / `cheapness_rank` are `null` for almost every hour: imbalance prices are only known after a settlement period has actually happened, so there is no genuine forward price for most of the next 48 hours (same reasoning as `mart_best_hours_today`, see [The gold layer](#the-gold-layer) above). Not a bug, and not worth hiding behind a fake value.
+- Delta tables under `data/`.
+- No credentials required.
 
-`latest_price_anomalies.json`:
-```json
-{
-  "schema_version": 1,
-  "generated_at": "2026-08-19T12:07:53Z",
-  "window_days": 30,
-  "anomalies": [
-    {
-      "settlement_period_start_utc": "2026-08-19T09:00:00Z",
-      "system_sell_price_gbp_per_mwh": 112.62,
-      "price_change_gbp_per_mwh": -75.38,
-      "anomaly_type": "large_swing",
-      "gold_built_at": "2026-08-19T12:05:05Z"
-    }
-  ]
-}
-```
-`anomaly_type` is `"negative_price"` or `"large_swing"`.
+Azure:
 
-**Update cadence: every 3 hours** (`data_product_schedule`, `0 */3 * * *` UTC) — not the 30-minute cadence the underlying carbon intensity forecast actually updates on. That was a deliberate trade, not an oversight: every refresh that actually changes something is a new git commit (see below for why it can't be an amended one), and a 30-minute cadence would add up to 48 permanent commits a day to this repo's history for a JSON refresh, which is not a real historical record worth that cost. 3 hours balances "the product looks reasonably live" against "this repo's history doesn't fill up with bot commits." A re-run whose output is byte-identical to what's already committed (nothing changed since the last refresh) pushes nothing, so the real commit rate is normally lower than the schedule's own 8-times-a-day ceiling.
+- Delta tables in ADLS Gen2.
+- Azure CLI authentication is the default.
+- Terraform provisions the storage account, container, and RBAC.
 
-**Same real repo automation as the revision report, one real design difference.** `revision_report_job` and `data_product_job` (`src/lakehouse/dagster_defs/reports.py` / `products.py`) share one git helper now (`dagster_defs/git_utils.py`, extracted once a second job needed the same commit/push logic, rather than copy-pasted a second time). Both commit + push for real, per the same explicit choice: a scheduled job changing what's on GitHub without a human in the loop that day, checked deliberately rather than defaulted into. But `data_product_job` was specifically **not** built to amend its previous commit and force-push, even though its output is pure derived state that arguably doesn't deserve permanent history the way a monthly revision report does. Amending assumes the previous commit on `main` is always this job's own last run, which stops being true the moment more than one automated committer (or a human) shares the branch — amending a commit that turns out to be a real revision-summary report, or a manual change, would silently fold unrelated work into one misleading commit. A new commit every real refresh is the only version of this that cannot corrupt someone else's history; the schedule, not git trickery, is what keeps the cost of that bounded.
+dbt has separate `local` and `azure` targets and separate DuckDB files so incremental state cannot mix data from different storage environments.
 
-**Proved before trusting it, same bar as the revision report.** `commit_and_push_products()`'s git subprocess calls are exercised in `tests/test_data_product_job.py` against a throwaway local repo with a real (throwaway, bare) remote, never this project's actual GitHub remote: a real refresh commits both files and actually reaches the remote, a second identical refresh adds no second commit, and a change to only one of the two files still commits cleanly.
+## Azure authentication
 
-**Real bugs caught before this ever touched a public URL, not assumed correct from the code reading right.** `lakehouse/products/api_export.py`'s `_clean()` exists because `DeltaTable`/DuckDB output is not directly JSON-safe, and every case here was confirmed against a real row pulled from gold, not assumed: `json.dumps()` raises outright on a bare `numpy.int32`/`int64` ("Object of type int32 is not JSON serializable"), and pandas' `NaN` survives `json.dumps()` as the literal token `NaN`, which most JSON parsers, including every browser's `JSON.parse`, reject outright as invalid. Worse, the two timestamp columns in these marts need two different fixes, not one: `half_hour_start_utc` comes back from DuckDB tz-naive despite its own name (needs `tz_localize`), while `generated_at` (from `current_timestamp`) comes back tz-aware in DuckDB's session-local zone, not UTC (needs `tz_convert`) — calling the wrong one on the wrong column raises. All of this is why the exported `gold_built_at` field exists under its own name rather than colliding with the payload's own top-level `generated_at`: the two are genuinely different moments, since this job (like the revision report) does not trigger a dbt build first, so hiding that gap behind one shared field name would be actively misleading, not just imprecise.
+Local development uses the Azure CLI identity.
 
-**Stretch version, not built:** a small FastAPI app serving the same data from gold, deployed free-tier, was considered and left for later. The static-JSON version already meets the actual requirement (a documented, stable, auto-updating URL, no server to keep up) at zero hosting cost and zero uptime to own; a real API framework earns its place the day a consumer needs something static JSON genuinely can't do (query parameters, a non-GET verb, real-time push), not before.
+GitHub Actions uses OIDC with a federated Azure identity. The workflow receives short-lived credentials rather than a client secret.
 
-## The money story
+CI has separate permissions for:
 
-Answers one real question: would [Octopus Agile](https://octopus.energy/smart/agile/) (day-ahead half-hourly pricing) have cost less than what I actually paid, for the electricity I actually used?
+- ADLS data access.
+- Storage account state required by Terraform.
+- Resource-group read access.
+- Subscription-level cost-management read access.
 
-**No smart-meter half-hourly export exists to answer this properly, so this doesn't pretend to have one.** The plan this follows originally assumed one; checking what's actually available (a supplier app showing weekly/monthly totals split into day and night kWh, an Economy 7-style tariff, no half-hourly breakdown anywhere) changed the design before any code was written, not after. `lakehouse/extractors/manual_usage.py` lands whatever you can actually read off the app by hand into `data/manual/electricity_usage.csv` (gitignored, same as every other real bronze table: this is personal financial-adjacent data, never meant for a public repo), one row per period you happened to check. `manual_usage_job` (Dagster, no schedule: this only changes when you hand-edit the file) lands it.
-
-`lakehouse/extractors/octopus_agile.py` fetches Agile's real published half-hourly rates (`AGILE-24-10-01`, no API key needed: this is Octopus's own public price feed, not account data) for the home region (West Midlands, GSP group `_E`, matching `seed_region`'s existing mapping and this project's `HOME_REGION_ID` everywhere else it appears), landed daily.
-
-`fct_agile_prices` classifies every half hour as day or night against this project's actual Economy 7 window, **night 00:30–07:30 local UK clock time** (confirmed directly, not assumed, before any model was written: the plan's own draft didn't specify one). `mart_tariff_comparison` averages Agile's real rates per band per logged period and multiplies by the day/night kWh you logged, compared against `estimated_cost_gbp`, your supplier's own bill estimate for that period (the fairer baseline: reconstructing your actual current tariff's rate structure from scratch is a real, separate claim this project has no way to verify independently). The real answer, for the two periods logged so far: Agile would have cost **£13.45 more** across both (July: £60.28 vs £52.38 actual; the second week of August: £17.18 vs £11.63 actual) — a genuine result, not a placeholder, and not the direction a marketing page would lead you to expect.
-
-**A real, stated approximation, not a hidden one:** without half-hourly consumption, `mart_tariff_comparison` assumes day-band usage was spread evenly across the period's day half hours (and the same for night). That's the most a day/night split can support; it is not the same claim as "every half hour's actual usage times its actual price." The Streamlit tab says this explicitly, not just this README.
-
-**Not answered, on purpose:** whether following this dashboard's own cheapest-hours advice (`mart_best_hours_today`, `mart_greenest_hours_next_48h`) actually saved anything this month. That needs evidence of *when* power was used, not a period total — this project has no way to check that, so the Streamlit tab says so directly rather than inventing a number to fill the gap.
-
-**A real bug this piece found in already-shipped work, not just its own.** Building `fct_agile_prices`'s day/night join surfaced that DuckDB's `cast(timestamptz_col as timestamp)` silently converts through the *connecting session's own local `TimeZone` setting*, not UTC — confirmed directly against known reference timestamps under three different session zones before trusting the fix, not assumed from the function's name. This project's real dev machine defaults to `TimeZone='Europe/London'` (inherited from the OS, not set explicitly anywhere), so every staging model doing a bare `cast(col as timestamp)` on a genuinely tz-aware bronze column was silently shifting values by an hour during BST. That included `stg_elexon_system_prices.sql` and `stg_elexon_generation_by_fuel.sql` — meaning **`fct_settlement_period.settlement_period_start_utc`, the exact field [The gold layer](#the-gold-layer) documents as "Elexon's own `startTime`, not something derived," was itself wrong on this machine**: 7,378 real rows, checked directly against bronze, not sampled. Invisible in CI the entire time, by construction: GitHub Actions runners default to `TimeZone='UTC'`, exactly the one session where this bug cannot reproduce, so every existing test passed throughout. Fixed project-wide with one macro, `macros/utc_timestamp.sql` (`cast(timezone('UTC', col) as timestamp)`, session-independent, verified across UTC/London/New York before trusting it), applied everywhere a staging model reads a tz-aware bronze column, plus a new permanent regression test, `tests/assert_utc_timestamps_match_bronze.sql`, proven to actually catch the bug (not just pass vacuously) by deliberately reintroducing the naive cast, confirming the test failed with the exact same 7,378-row count, then reverting. See `journal.md` for the full story.
-
-## Dashboard
-
-`apps/streamlit/dashboard.py` has six tabs: how green your home region's electricity is right now and over the visible forecast (the API's own index band, plus the true regional fuel mix behind it, from `fct_regional_generation_mix`), the greenest (and, where a settled price exists, cheapest) hours in the next 24 hours from `mart_best_hours_today`, GB's whole-transmission-system generation mix with a date/period drill-down, recent price events (negative prices and large half-hour-on-half-hour swings) with an event-type filter, the connections queue observatory (queue size over time, technology mix, average connection year, month-on-month movement, see [The connections queue observatory](#the-connections-queue-observatory) above), and the money story (would Agile have cost less, see [The money story](#the-money-story) above). It opens a read-only connection straight to the DuckDB file dbt already builds, no export step, no separate data path to keep in sync.
-
-Run it with `make streamlit` (or `uv run streamlit run apps/streamlit/dashboard.py --server.address 0.0.0.0`), then open it from your phone over Tailscale, the same way as any other self-hosted dashboard: `http://<tailscale-ip>:8501`. It can also be started on demand from the Dagster UI: `streamlit_dashboard_job` launches it as a detached background process and no-ops if it's already running.
-
-Runs entirely on the local network by design, same as a bank dashboard: this is personal financial-adjacent data, not something to put on the open internet. Streamlit Community Cloud is a genuine free option if a public, portfolio-facing version is ever wanted instead, but that needs the gold marts published somewhere Streamlit's servers can reach (small parquet snapshots committed by CI, in the spirit of `.github/workflows/docs.yml`), not this DuckDB file or any Azure credential. Standing up Azure App Service or Container Apps for this instead was considered and rejected: real operational surface (a container build, a registry, ingress rules to get right) for a dashboard whose only intended audience is one phone on Tailscale.
-
-## Auditing the project
-
-[`dbt_project_evaluator`](https://github.com/dbt-labs/dbt-project-evaluator) audits the *project*, not the data: DAG shape, naming conventions, folder structure, and test/documentation coverage. It is opt-in, not part of a plain `dbt build`:
-
-```bash
-uv run dbt build --select package:dbt_project_evaluator dbt_project_evaluator_exceptions --vars 'run_evaluator: true'
-```
-
-Its ~60 models are disabled by default (`dbt_project.yml`: `models: dbt_project_evaluator: +enabled: "{{ var('run_evaluator', false) }}"`) and only come alive with that flag. This isn't just about keeping ordinary `dbt build` runs smaller: disabled nodes never enter the manifest at all, so a plain `dbt docs generate` (what publishes to GitHub Pages) no longer includes any of them either. Without this, the published site's first screen was `dbt_project_evaluator`'s own project tab instead of this one's, because with more than one package's models in the manifest, the docs site has more than one project to land on and doesn't reliably pick the root project first. Fixed alongside a real `models/overview.md` (`{% docs __overview__ %}`), since this project didn't have one of its own to prefer over the noise either.
-
-It needs configuration, not just installation, to say anything useful here. Its defaults assume the standard `staging -> intermediate -> marts` layering; this project is `staging -> silver -> gold` (with gold split into `dimensions`/`facts`/`marts`), so `dbt_project.yml` maps every one of those five folders and their real prefixes (`stg_`, `silver_`, `dim_`, `fct_`, `mart_`) into the package's `model_types` variable explicitly. Left on defaults, it would have flagged every model in the project as being in the wrong folder for a layering this project never had.
-
-**What it actually found**, run against real data, not just the empty-project case:
-
-- **Model-level test and documentation coverage: 100%.** Every one of the 18 gold+silver+staging models has at least one test and a description (the package measures this per-model, not per-column: see [The gold layer](#the-gold-layer) above for the column-level pass, which found and fixed real gaps this coverage check wouldn't have caught).
-- **`fct_missing_primary_key_tests`, `fct_model_fanout`, `fct_rejoining_of_upstream_concepts`: all real findings, all legitimate by design.** Documented as exceptions in `dbt/seeds/dbt_project_evaluator_exceptions.csv` rather than silently ignored: the three staging models and the two revision-audit-log silver models genuinely have no single-row-per-key grain (staging is an append-only bronze pass-through; the revision tables log every change, not one row per key, by design); `fct_settlement_period` genuinely does fan out to all three marts directly, because it's the central fact in a project this size; `mart_daily_summary` genuinely rejoins `dim_date` and `dim_fuel_type` directly even though both are reachable through `fct_generation`, because the mart needs the raw dimension attributes for its own aggregation, not just whatever the fact already carries. Each row in the exceptions seed has the real reasoning in its `comment` column, the same way `is_renewable`/`is_interconnector` being separate flags is explained in the seed itself rather than just applied.
-- **`fct_root_models`: one real, un-excepted finding.** The three staging models (`stg_elexon_system_prices`, `stg_elexon_generation_by_fuel`, `stg_carbon_intensity`) show up with zero DAG parents. This is real, not a false positive: `macros/bronze.sql` resolves straight to a literal `delta_scan('...')` path string, never through dbt's own `source()` function, so bronze is genuinely invisible to dbt's dependency graph, and to the published lineage graph in [The gold layer](#the-gold-layer) above, which currently shows staging models with nothing feeding into them. Left as an open, visible finding rather than added to the exceptions seed, since suppressing it would hide a real gap rather than document a legitimate design choice. Fixing it properly means turning bronze into real dbt sources with per-target (local/Azure) path resolution, which is more than a one-line change to `bronze.sql`, noted here rather than done silently.
-
-Two things worth knowing if this package is ever added to a similar DuckDB project:
-
-- **DuckDB needs an explicit `dispatch` block in `dbt_project.yml`** (`search_order: ["dbt_project_evaluator", "dbt"]`). Without it the package's macros silently resolve to dbt's own no-op defaults and the audit models build empty (a failure mode that looks exactly like "a clean project" rather than "a missing config line"). Confirmed by testing without it first, not assumed from the docs.
-- **A seed cannot be redocumented under its own name.** The package ships a blank `dbt_project_evaluator_exceptions` seed; the documented way to override it is a same-named seed in this project plus `+enabled: false` on the package's version. That much works. But giving the override seed its own entry in `seeds/_seeds.yml` (even a bare `- name: dbt_project_evaluator_exceptions` with no other keys) makes dbt 1.12 refuse to parse at all ("dbt found two schema.yml entries for the same resource"), because the package's own `seeds/seeds.yml` already describes a seed of that exact name and dbt does not scope that particular check by package. Reproduced directly (removing the property-file entry down to nothing fixed it) rather than assumed. Column types for that one seed are set via `dbt_project.yml`'s seed config block instead, which needs no property-file entry to work.
-
-## Local vs Azure storage
-
-Every extractor and every dbt staging model goes through `src/lakehouse/io/storage.py` rather than building a path or a credential itself, so there is exactly one place that knows the difference between local and Azure. Two functions: `table_uri(layer, name)` resolves where a table lives, `storage_options()` resolves how to authenticate to it. Both read one environment variable, `TARGET`, set in `.env`:
-
-- **`TARGET=local`** (the default): tables live under `LOCAL_DATA_ROOT` (default `data`) as plain directories on disk: each one a real Delta table (parquet files plus a `_delta_log/` of JSON commits), not a bare parquet file. No credentials needed.
-- **`TARGET=azure`**: tables live in the ADLS Gen2 container Terraform created, addressed as `abfss://<container>@<account>.dfs.core.windows.net/bronze/<name>`.
-
-**Credentials, in order of preference:**
-1. **Azure CLI identity** (the default): `storage_options()` returns `{"azure_use_azure_cli": "true", ...}`, and `deltalake`'s own Rust-native Azure client shells out to your cached `az login` session for a token on every write or read. Nothing secret ever touches disk. This is backed by the `Storage Blob Data Contributor` role `infra/terraform/main.tf` assigns to your signed-in identity, and it is the answer you want to be able to give in an interview.
-2. **Account key fallback**: if `AZURE_STORAGE_ACCOUNT_KEY` is set in `.env`, it is used instead. Get it with `az storage account keys list --account-name <name> --query "[0].value" -o tsv`. This works reliably even if the CLI path misbehaves, but it is a long-lived secret sitting in a file (a stopgap, not the default).
-
-Both paths were verified against the real Terraform-provisioned storage account, not just locally: a table was written, read back, and deleted again through `azure_use_azure_cli` before this was trusted.
-
-**One thing this is not:** `deltalake` does not go through `adlfs` (an fsspec library) to talk to Azure. It has its own built-in Azure client and only recognises its own `azure_*`-prefixed option keys (`azure_storage_account_name`, `azure_use_azure_cli`, etc., pulled directly from the compiled library rather than assumed, since the option names are easy to get subtly wrong). `adlfs` and `azure-identity` are still project dependencies but currently unused by anything the pipeline writes or reads; they were added ahead of settling on this design and may be useful later for something that specifically wants fsspec-style access.
-
-**A schema gotcha worth knowing about:** Carbon Intensity's `intensity_actual` column is `None` for every row (the regional API is forecast-only). A pandas column that is `None` in every row has no non-null value for pyarrow to infer a concrete type from, so it gets typed as Arrow's `null`/void type, and DuckDB's `delta_scan()` (and most other Delta readers) reject void-typed columns outright. `carbon_intensity.py` now force-casts that column to `float64` before it ever reaches `write_deltalake`, rather than leaving it to type inference. This was caught by actually running `delta_scan()` against a real written table, not by reading the `deltalake` or DuckDB docs. Worth remembering if a future column is ever all-null in a real fetch.
-
-**dbt has the same local/Azure split, as its own `--target` flag.** `profiles.yml` defines two dbt targets, `local` and `azure`, each pointing at its own DuckDB file (`lakehouse.duckdb` / `lakehouse_azure.duckdb`, deliberately separate, see below). Every staging model reads bronze through one macro, `macros/bronze.sql`, the dbt-side equivalent of `table_uri()`: it switches on `target.name` and resolves to `delta_scan('<local path>')` or `delta_scan('abfss://...')`. `read_parquet()` is never used over a Delta directory anywhere in this project: files Delta has logically deleted are still physically present until a vacuum runs, so `read_parquet()` would silently include rows the table no longer contains: exactly the class of silent wrongness this whole project exists to catch.
-
-- `local` target: `extensions: [delta]`, no credentials, same as always.
-- `azure` target: `extensions: [delta, azure]`. DuckDB's `azure` extension is a *different* Rust crate from `deltalake`'s own Azure client, with its own separate credential resolution: the two don't share a credential path just because both say "Azure CLI." This was a real, reproduced failure, not a theoretical one: with an unpinned credential chain, `delta_scan()` tried the Azure Instance Metadata Service (managed identity) first, retried it ten times, and never got to the CLI credential at all. Fix: `profiles.yml`'s `secrets:` block pins `chain: cli` explicitly, so there is exactly one credential source, named, not a chain of fallbacks. `settings: azure_transport_option_type: curl` is also set, for a cross-platform HTTP transport rather than a platform-default one.
-- **Why separate DuckDB files per target, not one shared file:** tried sharing one first. Silver's incremental models merge into whatever table already exists rather than rebuilding from scratch, so running `--target local` (90 days of bronze) and then `--target azure` (bronze with far less history landed so far) against the *same* file left 90 days of resolved rows from local bronze sitting in `silver__system_prices` with no matching row in Azure's bronze, and `resolved_values_match_bronze_source` correctly failed loudly on around 4,300 of them. That is the test doing its job, not a bug in the test. Separate files mean each target's incremental state can only ever reconcile against its own bronze, which is what "two independent environments" has to actually mean.
-
-Both targets were run for real, not just described: `cd dbt && uv run dbt build --target local` and `--target azure` each pass all 56 tests, the azure one reading live data out of the real ADLS container.
-
-## CI's own Azure access
-
-CI is cloud-free by default: the `build` job (lint, unit tests, `dbt build` against committed fixtures) runs on every push and every pull request, including from forks, with no Azure credentials anywhere in reach.
-
-A separate `azure` job runs `dbt build --target azure` and `terraform plan` against the real subscription, but only on push to `main`, never on `pull_request`. That's deliberate, not an oversight: this is a public repo, and a fork's PR runs with that PR's own (possibly modified) workflow file, so granting cloud credentials on `pull_request` would let any external contributor author a step that uses them. Push to `main` only runs code that has already been merged and is already trusted.
-
-Authentication is OIDC via `azure/login`, backed by an `azuread_application_federated_identity_credential` (`infra/terraform/main.tf`) whose subject claim is pinned to `repo:<owner>/<repo>:ref:refs/heads/main`. There is no client secret anywhere in this chain for a leaked repo secret to expose, on either side: GitHub mints a short-lived OIDC token per run, Azure trusts it because the subject matches, and that's the whole credential. The three values in `AZURE_CLIENT_ID` / `AZURE_TENANT_ID` / `AZURE_SUBSCRIPTION_ID` (GitHub repo secrets) aren't sensitive on their own: they identify the app, they don't authenticate as it. They're kept as secrets anyway purely because that's the universal convention for `azure/login`'s inputs.
-
-CI's identity gets the same `Storage Blob Data Contributor` scope as the human identity above (data-plane only, on the storage account), plus `Reader` on the resource group for `terraform plan`. That was the design going in: `plan` only reads current state to compute a diff, it never creates or changes anything, so `Contributor` seemed unnecessary. A real CI run proved that incomplete, not wrong: `Reader` doesn't include `Microsoft.Storage/storageAccounts/listKeys/action`, and `azurerm_storage_account`'s own computed attributes (`primary_access_key` etc.) get refreshed via `listKeys` on every plan regardless of whether this config reads them, so plan 403'd. `storage_use_azuread` on the provider was tried first, on the theory it would make the provider use Azure AD instead of ever calling `listKeys` (confirmed with `TF_LOG=DEBUG` that it does not, for this specific attribute refresh). Fix: `Storage Account Contributor`, the narrowest built-in role that includes `listKeys`, scoped to just this one storage account, not the resource group. Separately, the budget resource lives at subscription scope, entirely outside the resource group `Reader` covers, so reading it needed its own grant: `Cost Management Reader` at subscription scope, nothing broader. Four scoped roles now, still no `Contributor` anywhere, still each one traceable to a specific real failure rather than granted pre-emptively.
+Permissions are scoped to the resources required by each job.
 
 ## Terraform state
 
-Remote, in a `tfstate` container in the same storage account this project provisions (kept separate from the `lakehouse` container bronze data lives in), not the Terraform default of a local file. This isn't a style preference: with local state, CI's fresh checkout has no state at all, so every `terraform output` and `terraform plan` there would see "nothing exists yet" regardless of what is actually deployed. That surfaced as empty-string `abfss://` URLs in dbt's `bronze()` macro, not as an obviously state-related error, before the backend existed. A human and CI running Terraform against the same infrastructure need to be looking at the same state, or neither one's view of it can be trusted.
+Terraform state is stored remotely in a dedicated `tfstate` container in the project's Azure storage account.
 
-Authenticated with `use_azuread_auth = true`, not a storage account key: the backend uses whatever Azure identity is already active (the Azure CLI session locally, `azure/login`'s OIDC-derived session in CI), the same "no stored secrets" choice as everything else here. No new RBAC grant was needed for this: the `Storage Blob Data Contributor` role both identities already have is scoped to the whole storage account, not just the `lakehouse` container, so it already covers `tfstate` too.
+The backend uses Azure AD authentication rather than a storage account key.
 
-## Budget alert
+## Budget protection
 
-`infra/terraform/main.tf` provisions an `azurerm_consumption_budget_subscription` at £1.50/month with two notifications, at 80% and 100% of actual spend, both emailing the account owner. This is the actual cost tripwire for the whole project, not a manual step to remember: it's created and destroyed along with everything else by `terraform apply` / `make teardown`.
+Terraform creates a £1.50/month subscription budget with alerts at 80% and 100% of actual spend.
 
-## Running it locally
+## CI
+
+The standard CI build is cloud-free:
+
+- Linting.
+- Unit tests.
+- dbt build against committed Delta fixtures.
+
+Azure validation runs separately on pushes to `main`:
+
+- `dbt build --target azure`
+- `terraform plan`
+
+Azure credentials are never exposed to pull-request workflows.
+
+## Running locally
 
 Prerequisites: Python and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-# install dependencies and the project itself
 uv sync
 
-# fetch some data (TARGET defaults to local, creates data/bronze/... on first run)
+# Fetch data
 uv run python -m lakehouse.extractors.carbon_intensity --date 2026-08-06
 uv run python -m lakehouse.extractors.elexon_system_prices --start-date 2026-05-18 --end-date 2026-08-15
 uv run python -m lakehouse.extractors.elexon_generation_by_fuel --start-date 2026-05-18 --end-date 2026-08-15
 uv run python -m lakehouse.extractors.neso_connections
 
-# run the orchestrator UI (persists run history to .dagster_home/)
+# Start Dagster
 make dev
-# then open http://localhost:3001
+# http://localhost:3001
 
-# build and test the transformations
+# Build and test dbt
 make dbt-build
 
-# view it
+# Start Streamlit
 make streamlit
-# then open http://localhost:8501
+# http://localhost:8501
 ```
 
-To land against the real Azure storage account instead of local disk, `export TARGET=azure` (or set it in `.env`) before running an extractor (see [Local vs Azure storage](#local-vs-azure-storage) above). `az login` needs to be current; nothing else changes.
+For Azure:
 
-To build and test against Azure-hosted bronze instead of local: `make build-azure` (plain `make dbt-build` / `make build-local` stay pointed at local). `TARGET` (what the Python extractors read) and dbt's `--target` (what these two make targets set) are independent switches: `make build-azure` sets both together so a run is internally consistent, but landing data with the Python extractors and building with dbt are still two separate commands, so it is possible to point them at different places by accident. If dbt's numbers look wrong, check both are pointed at the same place before anything else.
+```bash
+az login
+export TARGET=azure
+make build-azure
+```
 
-If `uv run python -m lakehouse...` fails with `ModuleNotFoundError: No module named 'lakehouse'`, the editable-install `.pth` file has had macOS's hidden flag set on it again (a recurring quirk in this environment, not a real packaging bug): run `chflags nohidden .venv/lib/python3.12/site-packages/*.pth` and retry. `make dev` clears this automatically before every launch; `make dbt-build`/`make dbt-deps` don't need it, since dbt itself never imports the `lakehouse` package.
+`TARGET` controls Python extraction; dbt's `--target` controls the transformation environment. `make build-azure` sets both consistently.
+
+## Dashboard
+
+`apps/streamlit/dashboard.py` provides:
+
+- Regional carbon intensity and fuel mix.
+- Greenest and available cheapest upcoming hours.
+- GB generation mix.
+- Recent price events.
+- NESO connections queue.
+- Agile tariff comparison.
+
+The dashboard reads directly from the DuckDB gold layer.
+
+For local access:
+
+```bash
+make streamlit
+```
+
+For phone access on the private network:
+
+```text
+http://<tailscale-ip>:8501
+```
+
+The dashboard is intentionally private because the money story uses personal financial-adjacent data.
+
+## Project audit
+
+`dbt_project_evaluator` checks model structure, naming, tests, and documentation.
+
+The current audit reports:
+
+- 100% model-level test and documentation coverage for the 18 staging, silver, and gold models.
+- Several findings documented as deliberate design exceptions.
+- One open finding: bronze is accessed through `delta_scan()` paths rather than dbt `source()` definitions, so bronze does not appear in dbt's dependency graph.
+
+Run the evaluator with:
+
+```bash
+uv run dbt build   --select package:dbt_project_evaluator dbt_project_evaluator_exceptions   --vars 'run_evaluator: true'
+```
+
+## Known design decisions
+
+### Bronze overwrite vs append
+
+Carbon Intensity bronze uses partition-scoped overwrite because the source does not publish revisions.
+
+Elexon bronze is append-only because published values can change.
+
+### Delta Lake vs Parquet reads
+
+Delta tables are always queried through Delta-aware readers. Direct `read_parquet()` against Delta directories could include files that Delta has logically removed.
+
+### UTC timestamps
+
+All tz-aware timestamps are normalised through the project's UTC macro before conversion to timestamp values. This prevents DuckDB session timezone settings from shifting UTC data.
+
+### Gold storage
+
+Gold remains in DuckDB because it is derived and inexpensive to rebuild. There is no need to duplicate it in ADLS for the current consumers.
 
 ## Roadmap
 
-- Phase 2 remaining: a `make teardown` target to `terraform destroy` on demand; and once a real Elexon revision has actually been captured in the wild (not just the synthetic fixture scenario), a small script showing the same settlement period at two Delta table versions with different prices, using Delta's time travel, the actual "my pipeline noticed the official price changed" demo.
-- Phase 3 remaining: the one open finding from [Auditing the project](#auditing-the-project): turning `macros/bronze.sql` into real dbt `source()` definitions so bronze actually appears in the DAG and the published lineage graph, instead of being a literal `delta_scan()` path string dbt can't see. (Power BI was dropped from the plan in favour of Streamlit alone; see [Status](#status).)
-- Phase 4 remaining: the connections queue observatory, the revision observatory going public, the public data product, and the money story are all done (see [The connections queue observatory](#the-connections-queue-observatory), [The revision observatory goes public](#the-revision-observatory-goes-public), [The public data product](#the-public-data-product), and [The money story](#the-money-story) above); still open is NESO demand forecast accuracy. The data product's FastAPI stretch version was deliberately left unbuilt too, see that section's own closing note for why.
-
-## Notes
-
-All data are open public data. Source data remains under each provider's own open data terms.
+- Add a `make teardown` target for Terraform.
+- Demonstrate a real Elexon revision using Delta Lake time travel once one is captured.
+- Replace literal bronze `delta_scan()` paths with dbt `source()` definitions.
+- Add NESO demand forecast accuracy analysis.
+- Consider FastAPI if the static JSON product later requires query parameters, real-time access, or other API behaviour.
 
 ## License
 
-MIT (see LICENSE).
+MIT. See `LICENSE`.
