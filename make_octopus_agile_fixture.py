@@ -1,12 +1,7 @@
 # Creates a tiny sample Delta table mirroring the bronze Octopus Agile
 # schema, so CI has something to build stg/silver/fct_agile_prices and
-# mart_tariff_comparison against. Run this LOCALLY from your repo root:
+# mart_tariff_comparison against. Run this LOCALLY using:
 #   uv run python make_octopus_agile_fixture.py
-#
-# One real day (48 half hours), not a handful of rows: the day/night
-# rate_band classification and mart_tariff_comparison's join both need a
-# genuine spread across the day to mean anything, not just enough rows
-# to satisfy a not_null test.
 
 from deltalake import write_deltalake
 
